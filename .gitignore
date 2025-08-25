@@ -5,6 +5,14 @@ build/
 dist/
 wheels/
 *.egg-info
+*.log
 
 # Virtual environments
 .venv
+.env
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo

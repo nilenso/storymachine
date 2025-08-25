@@ -256,7 +256,7 @@ wheels = [
 [[package]]
 name = "storymachine"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
     { name = "openai" },
@@ -266,7 +266,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = ">=0.116.1" },
-    { name = "openai", specifier = ">=1.100.2" },
+    { name = "openai", specifier = ">=0.100.2" },
     { name = "pydantic-settings", specifier = ">=2.10.1" },
 ]
 

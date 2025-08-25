@@ -6,6 +6,13 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "fastapi>=0.116.1",
-    "openai>=1.100.2",
+    "openai>=0.100.2",
     "pydantic-settings>=2.10.1",
 ]
+
+[project.scripts]
+storymachine = "storymachine.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.8.13,<0.9.0"]
+build-backend = "uv_build"

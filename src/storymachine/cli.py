@@ -37,8 +37,16 @@ def spinner(text="Loading", delay=0.1, stream=sys.stderr):
         stream.flush()
 
 
+def slugify(title: str) -> str:
+    slug = (
+        title.split("\n")[0].lower().replace(" ", "-").replace("[", "").replace("]", "")
+    )
+    slug = "".join(c for c in slug if c.isalnum() or c == "-")
+    return "-".join(filter(None, slug.split("-")))
+
+
 def get_context_enriched_stories(
-    client: OpenAI, prd_path: str, tech_spec_path: str
+    client: OpenAI, prd_path: str, tech_spec_path: str, target_dir: str = "."
 ) -> List[dict[str, str]]:
     """
     Process PRD and tech spec files to generate context-enriched stories.
@@ -47,6 +55,7 @@ def get_context_enriched_stories(
         client: OpenAI client instance
         prd_path: Path to the PRD file
         tech_spec_path: Path to the tech spec file
+        target_dir: Target directory for generated story files (default: current directory)
 
     Returns:
         List of generated story file names
@@ -57,20 +66,10 @@ def get_context_enriched_stories(
 
     stories = stories_from_project_sources(client, prd_content, tech_spec_content)
 
-    def slugify(title: str) -> str:
-        slug = (
-            title.split("\n")[0]
-            .lower()
-            .replace(" ", "-")
-            .replace("[", "")
-            .replace("]", "")
-        )
-        slug = "".join(c for c in slug if c.isalnum() or c == "-")
-        return "-".join(filter(None, slug.split("-")))
-
     def create_story_file(index: int, story) -> dict[str, str]:
         filename = f"{index:02d}-{slugify(story.title)}.md"
-        Path(filename).write_text(str(story))
+        target_path = Path(target_dir) / filename
+        target_path.write_text(str(story))
         return {"filename": filename, "content": str(story)}
 
     created_files = [create_story_file(i, story) for i, story in enumerate(stories, 1)]
@@ -101,6 +100,12 @@ def main():
         required=True,
         help="Path to the Technical Specification file",
     )
+    parser.add_argument(
+        "--target-dir",
+        type=str,
+        default=".",
+        help="Target directory for generated story files (default: current directory)",
+    )
 
     args = parser.parse_args()
 
@@ -117,7 +122,7 @@ def main():
 
     with spinner("Machining Stories"):
         created_stories = get_context_enriched_stories(
-            client, str(prd_path), str(tech_spec_path)
+            client, str(prd_path), str(tech_spec_path), args.target_dir
         )
 
     for story in created_stories:

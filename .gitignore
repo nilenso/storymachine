@@ -16,3 +16,6 @@ wheels/
 .idea/
 *.swp
 *.swo
+
+# Code coverage file
+.coverage

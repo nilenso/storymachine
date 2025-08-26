@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  ci:
+    name: Lint, type-check, build, and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Sync dependencies (all groups)
+        run: uv sync --all-groups --frozen
+
+      - name: Check formatting (ruff)
+        run: uv run --frozen ruff format . --check
+
+      - name: Lint (ruff)
+        run: uv run --frozen ruff check .
+
+      - name: Type check (pyright)
+        run: uv run --frozen pyright
+
+      - name: Build package
+        run: uv build
+
+      - name: Run tests
+        env:
+          # Avoid interference from preinstalled plugins on CI
+          PYTEST_DISABLE_PLUGIN_AUTOLOAD: ""
+        run: uv run --frozen pytest

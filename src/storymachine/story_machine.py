@@ -25,13 +25,14 @@ def stories_from_tool_call(tool_call: ResponseFunctionToolCall) -> List[Story]:
 
 
 def stories_from_project_sources(
-    client: OpenAI, prd_content: str, tech_spec_content: str
+    client: OpenAI, prd_content: str, tech_spec_content: str, model: str
 ) -> List[Story]:
     """Generate stories from project sources.
 
     Args:
         prd_content (str): The content of the project requirements document.
         tech_spec_content (str): The content of the technical specification document.
+        model (str): The OpenAI model to use for story generation.
     Returns:
         List[Story]: A list of generated stories.
     """
@@ -84,7 +85,7 @@ Ensure that the stories follow the principles laid out in Mike Cohn's 'User Stor
 
     input_list: ResponseInputParam = [{"role": "user", "content": prompt}]
     response = client.responses.create(
-        model="gpt-5-nano",
+        model=model,
         tools=[create_stories_tool],
         input=input_list,
         tool_choice="required",

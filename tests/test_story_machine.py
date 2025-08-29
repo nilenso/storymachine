@@ -61,7 +61,10 @@ class TestStoriesFromProjectSources:
         """Test successful story generation from project sources."""
 
         stories = stories_from_project_sources(
-            mock_openai_client, sample_prd_content, sample_tech_spec_content
+            mock_openai_client,
+            sample_prd_content,
+            sample_tech_spec_content,
+            "gpt-test",
         )
 
         assert len(stories) == 2
@@ -70,6 +73,7 @@ class TestStoriesFromProjectSources:
         mock_openai_client.responses.create.assert_called_once()
         call_args = mock_openai_client.responses.create.call_args
 
+        assert call_args.kwargs["model"] == "gpt-test"
         assert call_args.kwargs["tool_choice"] == "required"
         assert call_args.kwargs["tools"][0]["name"] == "create_stories"
 
@@ -82,7 +86,10 @@ class TestStoriesFromProjectSources:
         """Test that prompt contains project content."""
 
         stories_from_project_sources(
-            mock_openai_client, sample_prd_content, sample_tech_spec_content
+            mock_openai_client,
+            sample_prd_content,
+            sample_tech_spec_content,
+            "gpt-test",
         )
 
         call_args = mock_openai_client.responses.create.call_args

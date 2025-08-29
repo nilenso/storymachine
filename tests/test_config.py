@@ -115,3 +115,21 @@ class TestSettings:
 
         settings = Settings()  # pyright: ignore[reportCallIssue]
         assert settings.openai_api_key == "   "
+
+    def test_settings_default_model(self, monkeypatch) -> None:
+        """Test that model defaults when not provided."""
+        monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+        monkeypatch.delenv("MODEL", raising=False)
+
+        settings = Settings()  # pyright: ignore[reportCallIssue]
+
+        assert settings.model == "gpt-5"
+
+    def test_settings_model_env_var(self, monkeypatch) -> None:
+        """Test that model can be set via environment variable."""
+        monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+        monkeypatch.setenv("MODEL", "gpt-test")
+
+        settings = Settings()  # pyright: ignore[reportCallIssue]
+
+        assert settings.model == "gpt-test"

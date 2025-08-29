@@ -122,6 +122,8 @@ class TestGetContextEnrichedStories:
             == 1
         )
 
+        mock_openai_client.responses.create.assert_called_once()
+
 
 def test_main_parses_args_and_ingests_files(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
@@ -139,17 +141,23 @@ def test_main_parses_args_and_ingests_files(
     called: dict[str, str] = {}
 
     def fake_get_context_enriched_stories(
-        client, prd_path: str, tech_spec_path: str, target_dir: str = "."
+        client,
+        prd_path: str,
+        tech_spec_path: str,
+        target_dir: str = ".",
+        model: str = "gpt-5",
     ) -> list[dict[str, str]]:
         called["client"] = str(type(client))
         called["prd_path"] = prd_path
         called["tech_spec_path"] = tech_spec_path
         called["target_dir"] = target_dir
+        called["model"] = model
         return fake_stories
 
     with monkeypatch.context():
         # Provide required API key and avoid constructing a real OpenAI client
         monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+        monkeypatch.setenv("MODEL", "gpt-test")
         monkeypatch.setattr(
             "storymachine.cli.OpenAI", MagicMock(return_value=MagicMock())
         )
@@ -181,6 +189,7 @@ def test_main_parses_args_and_ingests_files(
     assert called["prd_path"] == str(prd_file)
     assert called["tech_spec_path"] == str(tech_spec_file)
     assert called["target_dir"] == str(tmp_path)
+    assert called["model"] == "gpt-test"
 
     # Verify expected output structure
     assert "Successfully created:" in out

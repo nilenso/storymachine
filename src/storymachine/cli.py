@@ -46,7 +46,11 @@ def slugify(title: str) -> str:
 
 
 def get_context_enriched_stories(
-    client: OpenAI, prd_path: str, tech_spec_path: str, target_dir: str = "."
+    client: OpenAI,
+    prd_path: str,
+    tech_spec_path: str,
+    target_dir: str = ".",
+    model: str = "gpt-5",
 ) -> List[dict[str, str]]:
     """
     Process PRD and tech spec files to generate context-enriched stories.
@@ -56,6 +60,7 @@ def get_context_enriched_stories(
         prd_path: Path to the PRD file
         tech_spec_path: Path to the tech spec file
         target_dir: Target directory for generated story files (default: current directory)
+        model: The model to use (default: ``gpt-5``)
 
     Returns:
         List of generated story file names
@@ -64,7 +69,9 @@ def get_context_enriched_stories(
     prd_content = Path(prd_path).read_text()
     tech_spec_content = Path(tech_spec_path).read_text()
 
-    stories = stories_from_project_sources(client, prd_content, tech_spec_content)
+    stories = stories_from_project_sources(
+        client, prd_content, tech_spec_content, model
+    )
 
     def create_story_file(index: int, story) -> dict[str, str]:
         filename = f"{index:02d}-{slugify(story.title)}.md"
@@ -122,7 +129,11 @@ def main():
 
     with spinner("Machining Stories"):
         created_stories = get_context_enriched_stories(
-            client, str(prd_path), str(tech_spec_path), args.target_dir
+            client,
+            str(prd_path),
+            str(tech_spec_path),
+            args.target_dir,
+            settings.model,
         )
 
     for story in created_stories:

@@ -1,0 +1,4 @@
+/* HACK: add custom CSS to make up for molabel's overly narrow container width */
+.molabel-container {
+  max-width: 1368px !important;
+}

@@ -19,12 +19,12 @@ setup: ## Install uv if not present and sync dependencies
 	fi
 	uv sync
 
-run: ## Run storymachine CLI (modify PRD and tech-spec paths as needed)
-	@echo "Example run - modify paths as needed:"
-	@echo "uv run storymachine --prd path/to/your/prd.md --tech-spec path/to/your/tech-spec.md"
-	@echo
-	@echo "Usage: uv run storymachine --help"
-	uv run storymachine --help
+run: ## Run storymachine CLI with arguments (e.g., make run -- --prd file.md --tech-spec spec.md)
+	uv run storymachine $(filter-out $@,$(MAKECMDGOALS))
+
+# This allows arguments to be passed to the run target
+%:
+	@:
 
 clean: ## Remove Python cache files and build artifacts
 	@echo "Cleaning up Python artifacts..."

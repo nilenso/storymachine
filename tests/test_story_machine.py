@@ -111,10 +111,9 @@ class TestSupportsReasoningParameters:
             "o1",
             "o3-mini",
             "o3",
-            "o4",
+            "o4-mini",
             "gpt-5",
-            "codex-davinci-002",
-            "code-davinci-002",
+            "codex-mini-latest",
         ]
 
         for model in reasoning_models:
@@ -146,10 +145,7 @@ class TestSupportsReasoningParameters:
             "o3-preview",
             "o3-custom",
             "o4-preview",
-            "gpt-5-turbo",
-            "gpt-5-custom",
             "codex-custom",
-            "code-davinci-custom",
         ]
 
         for model in prefix_models:
@@ -163,6 +159,7 @@ class TestSupportsReasoningParameters:
             "",
             "unknown-model",
             "gpt-4o1",
+            "gpt-5-chat",
             "o2-preview",
             "codex",
         ]

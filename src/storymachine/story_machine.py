@@ -16,12 +16,36 @@ class Story:
     acceptance_criteria: List[str]
 
     def __str__(self) -> str:
-        return f"Title: {self.title}\n\nAcceptance Criteria:\n- {'\n- '.join(self.acceptance_criteria)}\n"
+        criteria_text = "\n- ".join(self.acceptance_criteria)
+        return f"Title: {self.title}\n\nAcceptance Criteria:\n- {criteria_text}\n"
 
 
 def stories_from_tool_call(tool_call: ResponseFunctionToolCall) -> List[Story]:
     story_args = json.loads(tool_call.arguments)["stories"]
     return [Story(**story_arg) for story_arg in story_args]
+
+
+def _supports_reasoning_parameters(model: str) -> bool:
+    """Check if the model supports reasoning and text parameters.
+
+    Args:
+        model: The OpenAI model name
+
+    Returns:
+        True if the model supports reasoning parameters, False otherwise
+    """
+    reasoning_capable_models = {
+        "o1-preview",
+        "o1-mini",
+        "o1",
+        "gpt-5",
+    }
+
+    return (
+        model in reasoning_capable_models
+        or model.startswith("o1-")
+        or model.startswith("gpt-5")
+    )
 
 
 def stories_from_project_sources(
@@ -133,14 +157,19 @@ Do not output this reflection.
     }
 
     input_list: ResponseInputParam = [{"role": "user", "content": prompt}]
-    response = client.responses.create(
-        model=model,
-        tools=[create_stories_tool],
-        input=input_list,
-        tool_choice="required",
-        reasoning={"effort": "medium"},
-        text={"verbosity": "low"},
-    )
+
+    request_params = {
+        "model": model,
+        "tools": [create_stories_tool],
+        "input": input_list,
+        "tool_choice": "required",
+    }
+
+    if _supports_reasoning_parameters(model):
+        request_params["reasoning"] = {"effort": "medium"}
+        request_params["text"] = {"verbosity": "low"}
+
+    response = client.responses.create(**request_params)
 
     tool_calls = [
         response for response in response.output if response.type == "function_call"

@@ -41,6 +41,9 @@ def supports_reasoning_parameters(model: str) -> bool:
         "o3-mini",
         "o3",
         "o4-mini",
+        "gpt-5",
+        "gpt-5-mini",
+        "gpt-5-nano",
         "codex-mini-latest",
     }
 
@@ -50,6 +53,7 @@ def supports_reasoning_parameters(model: str) -> bool:
         or model.startswith("o3-")
         or model.startswith("o4-")
         or model.startswith("codex-")
+        or (model.startswith("gpt-5") and not model.startswith("gpt-5-chat"))
     )
 
 

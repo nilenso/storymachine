@@ -112,6 +112,9 @@ class TestSupportsReasoningParameters:
             "o3-mini",
             "o3",
             "o4-mini",
+            "gpt-5",
+            "gpt-5-mini",
+            "gpt-5-nano",
             "codex-mini-latest",
         ]
 
@@ -159,8 +162,6 @@ class TestSupportsReasoningParameters:
             "unknown-model",
             "gpt-4o1",
             "gpt-5-chat",
-            "gpt-5-mini",
-            "gpt-5-nano",
             "o2-preview",
             "codex",
         ]

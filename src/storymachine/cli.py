@@ -127,6 +127,11 @@ def main():
         print(f"Error: Tech spec file not found: {tech_spec_path}", file=sys.stderr)
         sys.exit(1)
 
+    target_dir_path = Path(args.target_dir)
+    if not target_dir_path.exists():
+        print(f"Error: Target directory not found: {target_dir_path}", file=sys.stderr)
+        sys.exit(1)
+
     with spinner("Machining Stories"):
         created_stories = get_context_enriched_stories(
             client,

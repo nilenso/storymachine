@@ -38,13 +38,22 @@ def _supports_reasoning_parameters(model: str) -> bool:
         "o1-preview",
         "o1-mini",
         "o1",
+        "o3-mini",
+        "o3",
+        "o4",
         "gpt-5",
+        "codex-davinci-002",
+        "code-davinci-002",
     }
 
     return (
         model in reasoning_capable_models
         or model.startswith("o1-")
+        or model.startswith("o3-")
+        or model.startswith("o4-")
         or model.startswith("gpt-5")
+        or model.startswith("codex-")
+        or model.startswith("code-davinci")
     )
 
 

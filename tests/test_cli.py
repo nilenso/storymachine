@@ -296,3 +296,41 @@ def test_main_missing_tech_spec_file_exits(
     assert excinfo.value.code == 1
     err = capsys.readouterr().err
     assert f"Error: Tech spec file not found: {missing_tech}" in err
+
+
+def test_main_missing_target_dir_exits(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Test that main() exits when target directory is missing."""
+    prd_file = tmp_path / "prd.md"
+    tech_spec_file = tmp_path / "tech_spec.md"
+    prd_file.write_text("PRD content")
+    tech_spec_file.write_text("Tech spec content")
+
+    missing_target_dir = tmp_path / "nonexistent_dir"
+
+    with monkeypatch.context():
+        monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+        monkeypatch.setattr(
+            "storymachine.cli.OpenAI", MagicMock(return_value=MagicMock())
+        )
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "storymachine",
+                "--prd",
+                str(prd_file),
+                "--tech-spec",
+                str(tech_spec_file),
+                "--target-dir",
+                str(missing_target_dir),
+            ],
+        )
+
+        with pytest.raises(SystemExit) as excinfo:
+            main()
+
+    assert excinfo.value.code == 1
+    err = capsys.readouterr().err
+    assert f"Error: Target directory not found: {missing_target_dir}" in err

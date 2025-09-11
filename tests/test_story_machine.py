@@ -6,6 +6,7 @@ from openai.types.responses import ResponseFunctionToolCall
 
 from storymachine.story_machine import (
     Story,
+    _supports_reasoning_parameters,
     stories_from_project_sources,
     stories_from_tool_call,
 )
@@ -97,3 +98,76 @@ class TestStoriesFromProjectSources:
 
         assert sample_prd_content in prompt_content
         assert sample_tech_spec_content in prompt_content
+
+
+class TestSupportsReasoningParameters:
+    """Tests for _supports_reasoning_parameters function."""
+
+    def test_reasoning_capable_models_exact_match(self) -> None:
+        """Test that exact reasoning model names return True."""
+        reasoning_models = [
+            "o1-preview",
+            "o1-mini",
+            "o1",
+            "o3-mini",
+            "o3",
+            "o4",
+            "gpt-5",
+            "codex-davinci-002",
+            "code-davinci-002",
+        ]
+
+        for model in reasoning_models:
+            assert _supports_reasoning_parameters(model), (
+                f"Model {model} should support reasoning"
+            )
+
+    def test_regular_chat_models_return_false(self) -> None:
+        """Test that regular chat models return False."""
+        regular_models = [
+            "gpt-4o",
+            "gpt-4",
+            "gpt-4-turbo",
+            "gpt-3.5-turbo",
+            "text-davinci-003",
+            "text-davinci-002",
+        ]
+
+        for model in regular_models:
+            assert not _supports_reasoning_parameters(model), (
+                f"Model {model} should not support reasoning"
+            )
+
+    def test_prefix_matching_reasoning_models(self) -> None:
+        """Test that prefix matching works for reasoning model families."""
+        prefix_models = [
+            "o1-custom",
+            "o1-future-version",
+            "o3-preview",
+            "o3-custom",
+            "o4-preview",
+            "gpt-5-turbo",
+            "gpt-5-custom",
+            "codex-custom",
+            "code-davinci-custom",
+        ]
+
+        for model in prefix_models:
+            assert _supports_reasoning_parameters(model), (
+                f"Model {model} should support reasoning via prefix"
+            )
+
+    def test_edge_cases(self) -> None:
+        """Test edge cases and invalid inputs."""
+        edge_cases = [
+            "",
+            "unknown-model",
+            "gpt-4o1",
+            "o2-preview",
+            "codex",
+        ]
+
+        for model in edge_cases:
+            assert not _supports_reasoning_parameters(model), (
+                f"Model {model} should not support reasoning"
+            )

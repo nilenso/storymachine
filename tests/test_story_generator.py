@@ -1,14 +1,14 @@
-"""Tests for story_machine module."""
+"""Tests for story_generator module."""
 
 from unittest.mock import MagicMock
 
 from openai.types.responses import ResponseFunctionToolCall
 
-from storymachine.story_machine import (
+from storymachine.story_generator import (
     Story,
-    supports_reasoning_parameters,
     stories_from_project_sources,
     stories_from_tool_call,
+    supports_reasoning_parameters,
 )
 
 

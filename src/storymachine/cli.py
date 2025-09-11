@@ -10,7 +10,7 @@ from typing import List
 from openai import OpenAI
 
 from .config import Settings
-from .story_machine import stories_from_project_sources
+from .story_generator import stories_from_project_sources
 
 
 @contextmanager

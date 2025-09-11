@@ -6,7 +6,7 @@ from openai.types.responses import ResponseFunctionToolCall
 
 from storymachine.story_machine import (
     Story,
-    _supports_reasoning_parameters,
+    supports_reasoning_parameters,
     stories_from_project_sources,
     stories_from_tool_call,
 )
@@ -112,12 +112,11 @@ class TestSupportsReasoningParameters:
             "o3-mini",
             "o3",
             "o4-mini",
-            "gpt-5",
             "codex-mini-latest",
         ]
 
         for model in reasoning_models:
-            assert _supports_reasoning_parameters(model), (
+            assert supports_reasoning_parameters(model), (
                 f"Model {model} should support reasoning"
             )
 
@@ -133,7 +132,7 @@ class TestSupportsReasoningParameters:
         ]
 
         for model in regular_models:
-            assert not _supports_reasoning_parameters(model), (
+            assert not supports_reasoning_parameters(model), (
                 f"Model {model} should not support reasoning"
             )
 
@@ -149,7 +148,7 @@ class TestSupportsReasoningParameters:
         ]
 
         for model in prefix_models:
-            assert _supports_reasoning_parameters(model), (
+            assert supports_reasoning_parameters(model), (
                 f"Model {model} should support reasoning via prefix"
             )
 
@@ -160,11 +159,13 @@ class TestSupportsReasoningParameters:
             "unknown-model",
             "gpt-4o1",
             "gpt-5-chat",
+            "gpt-5-mini",
+            "gpt-5-nano",
             "o2-preview",
             "codex",
         ]
 
         for model in edge_cases:
-            assert not _supports_reasoning_parameters(model), (
+            assert not supports_reasoning_parameters(model), (
                 f"Model {model} should not support reasoning"
             )

@@ -25,7 +25,7 @@ def stories_from_tool_call(tool_call: ResponseFunctionToolCall) -> List[Story]:
     return [Story(**story_arg) for story_arg in story_args]
 
 
-def _supports_reasoning_parameters(model: str) -> bool:
+def supports_reasoning_parameters(model: str) -> bool:
     """Check if the model supports reasoning and text parameters.
 
     Args:
@@ -41,7 +41,6 @@ def _supports_reasoning_parameters(model: str) -> bool:
         "o3-mini",
         "o3",
         "o4-mini",
-        "gpt-5",
         "codex-mini-latest",
     }
 
@@ -171,7 +170,7 @@ Do not output this reflection.
         "tool_choice": "required",
     }
 
-    if _supports_reasoning_parameters(model):
+    if supports_reasoning_parameters(model):
         request_params["reasoning"] = {"effort": "medium"}
         request_params["text"] = {"verbosity": "low"}
 

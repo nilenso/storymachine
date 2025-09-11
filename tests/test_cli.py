@@ -296,3 +296,83 @@ def test_main_missing_tech_spec_file_exits(
     assert excinfo.value.code == 1
     err = capsys.readouterr().err
     assert f"Error: Tech spec file not found: {missing_tech}" in err
+
+
+def test_main_nonexistent_target_dir_exits(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Test that main() exits when target directory doesn't exist."""
+    # Create both input files
+    prd_file = tmp_path / "prd.md"
+    tech_spec_file = tmp_path / "tech_spec.md"
+    prd_file.write_text("PRD content")
+    tech_spec_file.write_text("Tech spec content")
+
+    # Use non-existent target directory
+    nonexistent_dir = tmp_path / "nonexistent"
+
+    with monkeypatch.context():
+        monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+        monkeypatch.setattr(
+            "storymachine.cli.OpenAI", MagicMock(return_value=MagicMock())
+        )
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "storymachine",
+                "--prd",
+                str(prd_file),
+                "--tech-spec",
+                str(tech_spec_file),
+                "--target-dir",
+                str(nonexistent_dir),
+            ],
+        )
+
+        with pytest.raises(SystemExit) as excinfo:
+            main()
+
+    assert excinfo.value.code == 1
+    err = capsys.readouterr().err
+    assert f"Error: Target directory not found: {nonexistent_dir}" in err
+
+
+def test_main_target_is_file_exits(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Test that main() exits when target path is a file, not a directory."""
+    # Create both input files
+    prd_file = tmp_path / "prd.md"
+    tech_spec_file = tmp_path / "tech_spec.md"
+    target_file = tmp_path / "target.txt"
+
+    prd_file.write_text("PRD content")
+    tech_spec_file.write_text("Tech spec content")
+    target_file.write_text("This is a file, not a directory")
+
+    with monkeypatch.context():
+        monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+        monkeypatch.setattr(
+            "storymachine.cli.OpenAI", MagicMock(return_value=MagicMock())
+        )
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "storymachine",
+                "--prd",
+                str(prd_file),
+                "--tech-spec",
+                str(tech_spec_file),
+                "--target-dir",
+                str(target_file),
+            ],
+        )
+
+        with pytest.raises(SystemExit) as excinfo:
+            main()
+
+    assert excinfo.value.code == 1
+    err = capsys.readouterr().err
+    assert f"Error: Target path is not a directory: {target_file}" in err

@@ -6,9 +6,9 @@ from openai.types.responses import ResponseFunctionToolCall
 
 from storymachine.story_machine import (
     Story,
-    supports_reasoning_parameters,
+    model_supports_reasoning,
     stories_from_project_sources,
-    stories_from_tool_call,
+    parse_stories_from_response,
 )
 
 
@@ -34,14 +34,14 @@ class TestStory:
         assert "- User receives confirmation" in result
 
 
-class TestStoriesFromToolCall:
-    """Tests for stories_from_tool_call function."""
+class TestParseStoriesFromResponse:
+    """Tests for parse_stories_from_response function."""
 
-    def test_stories_from_tool_call_success(
+    def test_parse_stories_from_response_success(
         self, mock_tool_call: ResponseFunctionToolCall
     ) -> None:
         """Test successful parsing of tool call to stories."""
-        stories = stories_from_tool_call(mock_tool_call)
+        stories = parse_stories_from_response(mock_tool_call)
 
         assert len(stories) == 2
         assert isinstance(stories[0], Story)
@@ -100,8 +100,8 @@ class TestStoriesFromProjectSources:
         assert sample_tech_spec_content in prompt_content
 
 
-class TestSupportsReasoningParameters:
-    """Tests for _supports_reasoning_parameters function."""
+class TestModelSupportsReasoning:
+    """Tests for model_supports_reasoning function."""
 
     def test_reasoning_capable_models_exact_match(self) -> None:
         """Test that exact reasoning model names return True."""
@@ -119,7 +119,7 @@ class TestSupportsReasoningParameters:
         ]
 
         for model in reasoning_models:
-            assert supports_reasoning_parameters(model), (
+            assert model_supports_reasoning(model), (
                 f"Model {model} should support reasoning"
             )
 
@@ -135,7 +135,7 @@ class TestSupportsReasoningParameters:
         ]
 
         for model in regular_models:
-            assert not supports_reasoning_parameters(model), (
+            assert not model_supports_reasoning(model), (
                 f"Model {model} should not support reasoning"
             )
 
@@ -151,7 +151,7 @@ class TestSupportsReasoningParameters:
         ]
 
         for model in prefix_models:
-            assert supports_reasoning_parameters(model), (
+            assert model_supports_reasoning(model), (
                 f"Model {model} should support reasoning via prefix"
             )
 
@@ -167,6 +167,6 @@ class TestSupportsReasoningParameters:
         ]
 
         for model in edge_cases:
-            assert not supports_reasoning_parameters(model), (
+            assert not model_supports_reasoning(model), (
                 f"Model {model} should not support reasoning"
             )

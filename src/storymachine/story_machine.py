@@ -20,12 +20,12 @@ class Story:
         return f"Title: {self.title}\n\nAcceptance Criteria:\n- {criteria_text}\n"
 
 
-def stories_from_tool_call(tool_call: ResponseFunctionToolCall) -> List[Story]:
+def parse_stories_from_response(tool_call: ResponseFunctionToolCall) -> List[Story]:
     story_args = json.loads(tool_call.arguments)["stories"]
     return [Story(**story_arg) for story_arg in story_args]
 
 
-def supports_reasoning_parameters(model: str) -> bool:
+def model_supports_reasoning(model: str) -> bool:
     """Check if the model supports reasoning and text parameters.
 
     Args:
@@ -132,7 +132,7 @@ Do not output this reflection.
 </self_reflection>
 """
 
-    create_stories_tool: ToolParam = {
+    stories_tool_schema: ToolParam = {
         "type": "function",
         "name": "create_stories",
         "description": "Create a list of user stories",
@@ -169,12 +169,12 @@ Do not output this reflection.
 
     request_params = {
         "model": model,
-        "tools": [create_stories_tool],
+        "tools": [stories_tool_schema],
         "input": input_list,
         "tool_choice": "required",
     }
 
-    if supports_reasoning_parameters(model):
+    if model_supports_reasoning(model):
         request_params["reasoning"] = {"effort": "medium"}
         request_params["text"] = {"verbosity": "low"}
 
@@ -185,7 +185,9 @@ Do not output this reflection.
     ]
 
     stories = [
-        story for tool_call in tool_calls for story in stories_from_tool_call(tool_call)
+        story
+        for tool_call in tool_calls
+        for story in parse_stories_from_response(tool_call)
     ]
 
     return stories

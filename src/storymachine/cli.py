@@ -127,7 +127,7 @@ def main():
         print(f"Error: Tech spec file not found: {tech_spec_path}", file=sys.stderr)
         sys.exit(1)
 
-    with spinner("Machining Stories"):
+    with spinner("Generating Stories"):
         created_stories = get_context_enriched_stories(
             client,
             str(prd_path),

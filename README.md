@@ -2,6 +2,15 @@
 
 StoryMachine is a CLI tool that generates context-enriched user stories from Product Requirements Documents (PRDs) and Technical Specifications using AI-powered processing.
 
+> No more machine, that meant no more pictures, no more stories.
+Elliot was blue.
+Until he found something else, and that’s when he realised something very important…
+it wasn’t the machine that was making stories… it was him.
+… and he was really rather good at it.
+
+From [Tom McLaughlin's book, The Story Machine](https://www.youtube.com/watch?v=yXVqCCeCPAU&t=9s).
+
+
 ## Features
 
 - Generate user stories from PRD and technical specification documents

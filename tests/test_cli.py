@@ -1,6 +1,7 @@
 """Tests for cli module."""
 
 import io
+import json
 import sys
 import time
 from pathlib import Path
@@ -124,6 +125,63 @@ class TestGetContextEnrichedStories:
 
         mock_openai_client.responses.create.assert_called_once()
 
+    def test_get_context_enriched_stories_includes_block_when_repo(
+        self,
+        mock_openai_client: MagicMock,
+        tmp_path: Path,
+    ) -> None:
+        """Ensure implementation context block is included when repo provided."""
+
+        prd_file = tmp_path / "prd.md"
+        tech_file = tmp_path / "tech.md"
+        prd_file.write_text("PRD")
+        tech_file.write_text("TECH")
+
+        repo = tmp_path / "repo"
+        src = repo / "src" / "storymachine"
+        src.mkdir(parents=True)
+        (src / "cli.py").write_text("# placeholder\n")
+
+        create = MagicMock()
+        create.type = "function_call"
+        create.name = "create_stories"
+        create.arguments = json.dumps(
+            {
+                "stories": [
+                    {
+                        "title": "As a user",
+                        "acceptance_criteria": ["A", "B"],
+                    }
+                ]
+            }
+        )
+
+        emit = MagicMock()
+        emit.type = "function_call"
+        emit.name = "emit_implementation_context"
+        emit.arguments = json.dumps(
+            {"files": ["src/storymachine/cli.py"], "notes": "Edit CLI"}
+        )
+
+        mock_openai_client.responses.create.side_effect = [
+            MagicMock(output=[create]),
+            MagicMock(output=[emit]),
+        ]
+
+        result = get_context_enriched_stories(
+            mock_openai_client,
+            str(prd_file),
+            str(tech_file),
+            str(tmp_path),
+            "gpt-test",
+            str(repo),
+        )
+
+        assert len(result) >= 1
+        content = result[0]["content"]
+        assert "<implementation_context>" in content
+        assert "src/storymachine/cli.py" in content
+
 
 def test_main_parses_args_and_ingests_files(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
@@ -199,6 +257,69 @@ def test_main_parses_args_and_ingests_files(
     assert "~" * len("01-as-a-user.md") in out
     assert "Story 1 content" in out
     assert "Story 2 content" in out
+
+
+def test_main_parses_repo_and_forwards(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Ensure repo argument is forwarded to story generation."""
+    called: dict[str, object] = {}
+
+    def fake_get_context_enriched_stories(
+        client: object,
+        prd_path: str,
+        tech_spec_path: str,
+        target_dir: str,
+        model: str,
+        repo_path: str | None = None,
+    ) -> list[dict[str, str]]:
+        called["client"] = str(type(client))
+        called["prd_path"] = prd_path
+        called["tech_spec_path"] = tech_spec_path
+        called["target_dir"] = target_dir
+        called["model"] = model
+        called["repo_path"] = repo_path
+        return [
+            {"filename": "01-a.md", "content": "Story 1"},
+            {"filename": "02-b.md", "content": "Story 2"},
+        ]
+
+    prd_file = tmp_path / "prd.md"
+    tech_spec_file = tmp_path / "tech_spec.md"
+    repo_dir = tmp_path / "repo"
+    prd_file.write_text("PRD")
+    tech_spec_file.write_text("TECH")
+    repo_dir.mkdir()
+
+    with monkeypatch.context():
+        monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+        monkeypatch.setenv("MODEL", "gpt-test")
+        monkeypatch.setattr(
+            "storymachine.cli.OpenAI", MagicMock(return_value=MagicMock())
+        )
+        monkeypatch.setattr(
+            "storymachine.cli.get_context_enriched_stories",
+            fake_get_context_enriched_stories,
+        )
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "storymachine",
+                "--prd",
+                str(prd_file),
+                "--tech-spec",
+                str(tech_spec_file),
+                "--target-dir",
+                str(tmp_path),
+                "--repo",
+                str(repo_dir),
+            ],
+        )
+
+        main()
+
+    assert called["repo_path"] == str(repo_dir)
 
 
 def test_main_missing_required_args_shows_usage(

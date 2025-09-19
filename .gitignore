@@ -19,3 +19,6 @@ wheels/
 
 # Code coverage file
 .coverage
+
+# OS files
+.DS_Store

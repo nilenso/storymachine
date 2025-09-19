@@ -9,7 +9,7 @@ import pytest
 from openai import OpenAI
 from openai.types.responses import ResponseFunctionToolCall
 
-from storymachine.story_machine import Story
+from storymachine.story_generator import Story
 
 
 @pytest.fixture

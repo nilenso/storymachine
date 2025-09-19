@@ -32,6 +32,9 @@ storymachine = "storymachine.cli:main"
 requires = ["uv_build>=0.8.13,<0.9.0"]
 build-backend = "uv_build"
 
+[tool.ruff]
+lint.select = ["BLE001"]
+
 [tool.marimo.language_servers.pylsp]
 enabled = true
 enable_ruff = true

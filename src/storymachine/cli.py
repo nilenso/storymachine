@@ -10,7 +10,12 @@ from typing import List
 from openai import OpenAI
 
 from .config import Settings
-from .story_machine import stories_from_project_sources
+from .story_generator import stories_from_project_sources
+from .implementation_context import (
+    ImplementationContext,
+    generate_implementation_context,
+    render_context_enriched_story,
+)
 
 
 @contextmanager
@@ -51,6 +56,7 @@ def get_context_enriched_stories(
     tech_spec_path: str,
     target_dir: str = ".",
     model: str = "gpt-5",
+    repo_path: str | None = None,
 ) -> List[dict[str, str]]:
     """
     Process PRD and tech spec files to generate context-enriched stories.
@@ -61,6 +67,7 @@ def get_context_enriched_stories(
         tech_spec_path: Path to the tech spec file
         target_dir: Target directory for generated story files (default: current directory)
         model: The model to use (default: ``gpt-5``)
+        repo_path: Optional path to a local repository for implementation context
 
     Returns:
         List of generated story file names
@@ -76,8 +83,31 @@ def get_context_enriched_stories(
     def create_story_file(index: int, story) -> dict[str, str]:
         filename = f"{index:02d}-{slugify(story.title)}.md"
         target_path = Path(target_dir) / filename
-        target_path.write_text(str(story))
-        return {"filename": filename, "content": str(story)}
+
+        include_block = repo_path is not None
+        impl_ctx: ImplementationContext | None = None
+        if include_block and repo_path is not None:
+            try:
+                impl_ctx = generate_implementation_context(
+                    client=client,
+                    model=model,
+                    story=story,
+                    tech_spec_content=tech_spec_content,
+                    repo_root=repo_path,
+                )
+            except Exception as exc:  # noqa: BLE001
+                # Top-level guard; generation must not crash
+                impl_ctx = ImplementationContext(
+                    status="unreadable",
+                    files=[],
+                    notes=f"Repository processing error: {exc}",
+                )
+
+        content = render_context_enriched_story(
+            story=story, impl_ctx=impl_ctx, include_block=include_block
+        )
+        target_path.write_text(content)
+        return {"filename": filename, "content": content}
 
     created_files = [create_story_file(i, story) for i, story in enumerate(stories, 1)]
 
@@ -113,6 +143,12 @@ def main():
         default=".",
         help="Target directory for generated story files (default: current directory)",
     )
+    parser.add_argument(
+        "--repo",
+        type=str,
+        required=False,
+        help="Path to a local repository to use for implementation context",
+    )
 
     args = parser.parse_args()
 
@@ -137,13 +173,23 @@ def main():
         sys.exit(1)
 
     with spinner("Machining Stories"):
-        created_stories = get_context_enriched_stories(
-            client,
-            str(prd_path),
-            str(tech_spec_path),
-            args.target_dir,
-            settings.model,
-        )
+        if args.repo is None:
+            created_stories = get_context_enriched_stories(
+                client,
+                str(prd_path),
+                str(tech_spec_path),
+                args.target_dir,
+                settings.model,
+            )
+        else:
+            created_stories = get_context_enriched_stories(
+                client,
+                str(prd_path),
+                str(tech_spec_path),
+                args.target_dir,
+                settings.model,
+                args.repo,
+            )
 
     for story in created_stories:
         print(story["filename"])

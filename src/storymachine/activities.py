@@ -1,6 +1,11 @@
 """Individual workflow activities for StoryMachine."""
 
+import itertools
 import json
+import sys
+import time
+from contextlib import contextmanager
+from threading import Event, Thread
 from typing import List
 
 from openai.types.responses import (
@@ -8,7 +13,32 @@ from openai.types.responses import (
 )
 
 from .ai import get_prompt, call_openai_api
-from .types import Story, WorkflowInput
+from .types import FeedbackResponse, Story, WorkflowInput, FeedbackStatus
+
+
+@contextmanager
+def spinner(text="Loading", delay=0.1, stream=sys.stderr):
+    """Display a spinner while executing code."""
+    stop = Event()
+
+    def run():
+        stream.write("\x1b[?25l")  # hide cursor
+        for c in itertools.cycle("|/-\\"):
+            if stop.is_set():
+                break
+            stream.write(f"\r{c} {text}")
+            stream.flush()
+            time.sleep(delay)
+
+    t = Thread(target=run, daemon=True)
+    t.start()
+    try:
+        yield
+    finally:
+        stop.set()
+        t.join()
+        stream.write("\r\x1b[2K\x1b[?25h")  # clear line + show cursor
+        stream.flush()
 
 
 CREATE_STORIES_TOOL: ToolParam = {
@@ -71,3 +101,16 @@ def problem_break_down(
     # Call OpenAI API and parse response
     response = call_openai_api(prompt, [CREATE_STORIES_TOOL])
     return parse_stories_from_response(response)
+
+
+def get_human_input() -> FeedbackResponse:
+    """Get user approval/rejection response from CLI."""
+    while True:
+        approval = input("Approve (y/n): ").strip().lower()
+        if approval in ["y", "yes"]:
+            return FeedbackResponse(status=FeedbackStatus.ACCEPTED)
+        elif approval in ["n", "no"]:
+            comment = input("Please provide comments: ").strip()
+            return FeedbackResponse(status=FeedbackStatus.REJECTED, comment=comment)
+        else:
+            print("Please enter 'y' for yes or 'n' for no.")

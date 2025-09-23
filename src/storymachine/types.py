@@ -5,13 +5,6 @@ from enum import Enum
 from typing import List, Optional
 
 
-class ResponseStatus(Enum):
-    """Status of human response in workflow."""
-
-    ACCEPTED = "accepted"
-    REJECTED = "rejected"
-
-
 @dataclass
 class Story:
     """A user story with title and acceptance criteria."""
@@ -32,10 +25,16 @@ class WorkflowInput:
     tech_spec_content: str
 
 
-# TODO: rename this appropriately, perhaps to FeedbackResponse?
-@dataclass
-class Response:
-    """Captures human response in workflow with status and optional comment."""
+class FeedbackStatus(Enum):
+    """Status of human feedback response in workflow."""
 
-    status: ResponseStatus
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+
+
+@dataclass
+class FeedbackResponse:
+    """Captures human feedback response in workflow with status and optional comment."""
+
+    status: FeedbackStatus
     comment: Optional[str] = None

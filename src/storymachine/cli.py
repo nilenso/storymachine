@@ -88,8 +88,7 @@ def main():
     print(f"Reasoning Effort: {settings.reasoning_effort}")
     print()
 
-    with spinner("Machining Stories"):
-        w1(workflow_input)
+    w1(workflow_input)
 
 
 if __name__ == "__main__":

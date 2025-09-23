@@ -22,3 +22,6 @@ wheels/
 
 # Local input test data
 test-data/
+
+# Local claude settings
+.claude/settings.local.json

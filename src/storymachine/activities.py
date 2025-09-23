@@ -7,7 +7,7 @@ from openai.types.responses import (
     ToolParam,
 )
 
-from .ai import get_prompt
+from .ai import get_prompt, call_openai_api
 from .types import Story, WorkflowInput
 
 

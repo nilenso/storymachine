@@ -49,7 +49,7 @@ def call_openai_api(
     tools: List[ToolParam],
 ):
     """Call OpenAI API and return the response."""
-    settings = Settings(_env_file=".env")  # pyright: ignore[reportCallIssue]
+    settings = Settings()  # pyright: ignore[reportCallIssue]
     client = OpenAI(api_key=settings.openai_api_key)
     model = settings.model
 
@@ -63,7 +63,7 @@ def call_openai_api(
     }
 
     if supports_reasoning_parameters(model):
-        request_params["reasoning"] = {"effort": "medium"}
+        request_params["reasoning"] = {"effort": settings.reasoning_effort}
         request_params["text"] = {"verbosity": "low"}
 
     response = client.responses.create(**request_params)

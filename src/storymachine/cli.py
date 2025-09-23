@@ -5,12 +5,9 @@ import time
 from contextlib import contextmanager
 from pathlib import Path
 from threading import Event, Thread
-from typing import List
-
-from openai import OpenAI
-
+from .types import WorkflowInput
+from .workflow import w1
 from .config import Settings
-from .story_machine import stories_from_project_sources
 
 
 @contextmanager
@@ -45,52 +42,8 @@ def slugify(title: str) -> str:
     return "-".join(filter(None, slug.split("-")))
 
 
-def get_context_enriched_stories(
-    client: OpenAI,
-    prd_path: str,
-    tech_spec_path: str,
-    target_dir: str = ".",
-    model: str = "gpt-5",
-) -> List[dict[str, str]]:
-    """
-    Process PRD and tech spec files to generate context-enriched stories.
-
-    Args:
-        client: OpenAI client instance
-        prd_path: Path to the PRD file
-        tech_spec_path: Path to the tech spec file
-        target_dir: Target directory for generated story files (default: current directory)
-        model: The model to use (default: ``gpt-5``)
-
-    Returns:
-        List of generated story file names
-    """
-
-    prd_content = Path(prd_path).read_text()
-    tech_spec_content = Path(tech_spec_path).read_text()
-
-    stories = stories_from_project_sources(
-        client, prd_content, tech_spec_content, model
-    )
-
-    def create_story_file(index: int, story) -> dict[str, str]:
-        filename = f"{index:02d}-{slugify(story.title)}.md"
-        target_path = Path(target_dir) / filename
-        target_path.write_text(str(story))
-        return {"filename": filename, "content": str(story)}
-
-    created_files = [create_story_file(i, story) for i, story in enumerate(stories, 1)]
-
-    return created_files
-
-
 def main():
     """Main CLI entry point for StoryMachine."""
-
-    # initialize settings
-    settings = Settings(_env_file=".env")  # pyright: ignore[reportCallIssue]
-
-    client = OpenAI(api_key=settings.openai_api_key)
 
     parser = argparse.ArgumentParser(
         description="StoryMachine - Generate context-enriched user stories from PRD and tech spec"
@@ -107,12 +60,6 @@ def main():
         required=True,
         help="Path to the Technical Specification file",
     )
-    parser.add_argument(
-        "--target-dir",
-        type=str,
-        default=".",
-        help="Target directory for generated story files (default: current directory)",
-    )
 
     args = parser.parse_args()
 
@@ -127,34 +74,22 @@ def main():
         print(f"Error: Tech spec file not found: {tech_spec_path}", file=sys.stderr)
         sys.exit(1)
 
-    target_path = Path(args.target_dir)
-    if not target_path.exists():
-        print(f"Error: Target directory not found: {target_path}", file=sys.stderr)
-        sys.exit(1)
+    # Read file contents and create workflow input
+    prd_content = prd_path.read_text()
+    tech_spec_content = tech_spec_path.read_text()
+    workflow_input = WorkflowInput(
+        prd_content=prd_content,
+        tech_spec_content=tech_spec_content,
+    )
 
-    if not target_path.is_dir():
-        print(f"Error: Target path is not a directory: {target_path}", file=sys.stderr)
-        sys.exit(1)
+    # Display current configuration
+    settings = Settings()  # pyright: ignore[reportCallIssue]
+    print(f"Model: {settings.model}")
+    print(f"Reasoning Effort: {settings.reasoning_effort}")
+    print()
 
     with spinner("Machining Stories"):
-        created_stories = get_context_enriched_stories(
-            client,
-            str(prd_path),
-            str(tech_spec_path),
-            args.target_dir,
-            settings.model,
-        )
-
-    for story in created_stories:
-        print(story["filename"])
-        print("~" * len(story["filename"]))
-        print()
-        print(story["content"])
-        print()
-
-    print("Successfully created:")
-    for i, story in enumerate(created_stories, 1):
-        print(f"{i}. {story['filename']}")
+        w1(workflow_input)
 
 
 if __name__ == "__main__":

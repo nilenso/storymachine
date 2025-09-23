@@ -19,3 +19,6 @@ wheels/
 
 # Code coverage file
 .coverage
+
+# Local input test data
+test-data/

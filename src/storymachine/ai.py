@@ -1,11 +1,10 @@
 """AI utilities and OpenAI abstraction for StoryMachine."""
 
 from pathlib import Path
-from typing import Any, List
+from typing import Any, Dict, List
 
 from openai import OpenAI
 from openai.types.responses import (
-    ResponseInputParam,
     ToolParam,
 )
 
@@ -53,12 +52,12 @@ def call_openai_api(
     client = OpenAI(api_key=settings.openai_api_key)
     model = settings.model
 
-    input_list: ResponseInputParam = [{"role": "user", "content": prompt}]
+    input_messages: List[Dict[str, Any]] = [{"role": "user", "content": prompt}]
 
     request_params = {
         "model": model,
         "tools": tools,
-        "input": input_list,
+        "input": input_messages,
         "tool_choice": "required",
     }
 
@@ -67,5 +66,35 @@ def call_openai_api(
         request_params["text"] = {"verbosity": "low"}
 
     response = client.responses.create(**request_params)
+
+    # Process tool calls and send results back
+    for tool_call in response.output:
+        if tool_call.type != "function_call":
+            continue
+
+        # Add the original tool call to conversation history
+        input_messages.append(
+            {
+                "type": "function_call",
+                "call_id": tool_call.call_id,
+                "name": tool_call.name,
+                "arguments": tool_call.arguments,
+            }
+        )
+
+        # Add the tool call output
+        input_messages.append(
+            {
+                "type": "function_call_output",
+                "call_id": tool_call.call_id,
+                "output": "",
+            }
+        )
+
+    # If there were tool calls, make a second API call with the results
+    if any(tool_call.type == "function_call" for tool_call in response.output):
+        request_params["input"] = input_messages
+        request_params.pop("tool_choice", None)  # Remove tool_choice for follow-up call
+        _response = client.responses.create(**request_params)
 
     return response

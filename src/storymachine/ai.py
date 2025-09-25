@@ -1,7 +1,7 @@
 """AI utilities and OpenAI abstraction for StoryMachine."""
 
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from openai import OpenAI
 from openai.types.responses import (
@@ -9,6 +9,9 @@ from openai.types.responses import (
 )
 
 from .config import Settings
+
+# Global conversation state
+conversation_id: Optional[str] = None
 
 
 def supports_reasoning_parameters(model: str) -> bool:
@@ -36,6 +39,17 @@ def supports_reasoning_parameters(model: str) -> bool:
     )
 
 
+def get_or_create_conversation() -> str:
+    """Get existing conversation ID or create a new one."""
+    global conversation_id
+    if conversation_id is None:
+        settings = Settings()  # pyright: ignore[reportCallIssue]
+        client = OpenAI(api_key=settings.openai_api_key)
+        conversation = client.conversations.create()
+        conversation_id = conversation.id
+    return conversation_id
+
+
 def get_prompt(filename: str, **kwargs: Any) -> str:
     """Load and format a prompt template from the prompts directory."""
     prompt_file = Path(__file__).parent / "prompts" / filename
@@ -59,6 +73,7 @@ def call_openai_api(
         "tools": tools,
         "input": input_messages,
         "tool_choice": "required",
+        "conversation": get_or_create_conversation(),
     }
 
     if supports_reasoning_parameters(model):

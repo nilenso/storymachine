@@ -91,12 +91,16 @@ def problem_break_down(
     comments: str = "",
 ) -> List[Story]:
     """Break down the problem into user stories."""
-    # Load and format prompt template
-    prompt = get_prompt(
-        "problem_break_down.md",
-        prd_content=workflow_input.prd_content,
-        tech_spec_content=workflow_input.tech_spec_content,
-    )
+    if stories:
+        # If stories exist, this is a revision - send simple feedback prompt
+        prompt = f"Based on the feedback below, revise the previous user stories and produce an improved list via the `create_stories` tool.\n\n<feedback>\n{comments}\n</feedback>"
+    else:
+        # Initial story generation - use full prompt template
+        prompt = get_prompt(
+            "problem_break_down.md",
+            prd_content=workflow_input.prd_content,
+            tech_spec_content=workflow_input.tech_spec_content,
+        )
 
     # Call OpenAI API and parse response
     response = call_openai_api(prompt, [CREATE_STORIES_TOOL])

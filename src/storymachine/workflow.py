@@ -2,8 +2,8 @@
 
 from typing import List
 
-from .activities import *
-from .types import Story, WorkflowInput
+from .activities import get_human_input, problem_break_down, spinner
+from .types import FeedbackStatus, Story, WorkflowInput
 
 
 def w1(workflow_input: WorkflowInput) -> List[Story]:
@@ -11,18 +11,26 @@ def w1(workflow_input: WorkflowInput) -> List[Story]:
     with spinner("Machining Stories"):
         stories = problem_break_down(workflow_input, [], "")
 
-    # Display story titles
-    print("Generated Stories:")
-    for i, story in enumerate(stories, 1):
-        print(f"{i}. {story.title}")
-    print()
+    while True:
+        # Display story titles
+        print("Generated Stories:")
+        for i, story in enumerate(stories, 1):
+            print(f"{i}. {story.title}")
+        print()
 
-    # Get user feedback
-    response = get_human_input()
+        # Get user feedback
+        response = get_human_input()
 
-    if response.status == FeedbackStatus.ACCEPTED:
-        print("Stories approved!")
-    else:
-        print(f"Stories rejected. Comments: {response.comment}")
+        if response.status == FeedbackStatus.ACCEPTED:
+            print("Stories approved!")
+            break
+        else:
+            print(f"Stories rejected. Comments: {response.comment}")
+            print("\nRevising stories based on feedback...\n")
+
+            with spinner("Revising Stories"):
+                stories = problem_break_down(
+                    workflow_input, stories, response.comment or ""
+                )
 
     return stories

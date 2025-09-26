@@ -92,8 +92,8 @@ def problem_break_down(
 ) -> List[Story]:
     """Break down the problem into user stories."""
     if stories:
-        # If stories exist, this is a revision - send simple feedback prompt
-        prompt = f"Based on the feedback below, revise the previous user stories and produce an improved list via the `create_stories` tool.\n\n<feedback>\n{comments}\n</feedback>"
+        # If stories exist, this is a revision - use iterating on stories prompt
+        prompt = get_prompt("iterating_on_stories.md", comments=comments)
     else:
         # Initial story generation - use full prompt template
         prompt = get_prompt(

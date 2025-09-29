@@ -168,3 +168,34 @@ def get_human_input() -> FeedbackResponse:
             return FeedbackResponse(status=FeedbackStatus.REJECTED, comment=comment)
         else:
             print("Please enter 'y' for yes or 'n' for no.")
+
+
+def print_story_titles(
+    stories: List[Story], header: str = "Generated Stories:"
+) -> None:
+    """Print a list of story titles with numbers."""
+    print(header)
+    for i, story in enumerate(stories, 1):
+        print(f"{i}. {story.title}")
+    print()
+
+
+def print_story_with_criteria(story: Story, story_prefix: str = "Story:") -> None:
+    """Print a single story with its acceptance criteria."""
+    print(f"\n{story_prefix} {story.title}")
+    print("Acceptance Criteria:")
+    for j, ac in enumerate(story.acceptance_criteria, 1):
+        print(f"  {j}. {ac}")
+    print()
+
+
+def print_final_stories(stories: List[Story]) -> None:
+    """Print final summary of all stories with acceptance criteria."""
+    print("\n" + "=" * 50)
+    print("FINAL USER STORIES WITH ACCEPTANCE CRITERIA")
+    print("=" * 50)
+    for i, story in enumerate(stories, 1):
+        print(f"\n{i}. {story.title}")
+        print("   Acceptance Criteria:")
+        for j, ac in enumerate(story.acceptance_criteria, 1):
+            print(f"     {j}. {ac}")

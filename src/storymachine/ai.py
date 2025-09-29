@@ -9,7 +9,6 @@ from openai.types.responses import (
     Response,
     ResponseReasoningItem,
     ResponseFunctionToolCall,
-    ResponseOutputMessage,
 )
 
 from .config import Settings

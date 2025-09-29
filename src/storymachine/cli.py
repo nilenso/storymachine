@@ -1,45 +1,9 @@
 import argparse
-import itertools
 import sys
-import time
-from contextlib import contextmanager
 from pathlib import Path
-from threading import Event, Thread
 from .types import WorkflowInput
 from .workflow import w1
 from .config import Settings
-
-
-@contextmanager
-def spinner(text="Loading", delay=0.1, stream=sys.stderr):
-    stop = Event()
-
-    def run():
-        stream.write("\x1b[?25l")  # hide cursor
-        for c in itertools.cycle("|/-\\"):
-            if stop.is_set():
-                break
-            stream.write(f"\r{c} {text}")
-            stream.flush()
-            time.sleep(delay)
-
-    t = Thread(target=run, daemon=True)
-    t.start()
-    try:
-        yield
-    finally:
-        stop.set()
-        t.join()
-        stream.write("\r\x1b[2K\x1b[?25h")  # clear line + show cursor
-        stream.flush()
-
-
-def slugify(title: str) -> str:
-    slug = (
-        title.split("\n")[0].lower().replace(" ", "-").replace("[", "").replace("]", "")
-    )
-    slug = "".join(c for c in slug if c.isalnum() or c == "-")
-    return "-".join(filter(None, slug.split("-")))
 
 
 def main():

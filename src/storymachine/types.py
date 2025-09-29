@@ -11,10 +11,14 @@ class Story:
 
     title: str
     acceptance_criteria: List[str]
+    enriched_context: Optional[str] = None
 
     def __str__(self) -> str:
         criteria_text = "\n- ".join(self.acceptance_criteria)
-        return f"Title: {self.title}\n\nAcceptance Criteria:\n- {criteria_text}\n"
+        result = f"Title: {self.title}\n\nAcceptance Criteria:\n- {criteria_text}\n"
+        if self.enriched_context:
+            result += f"\nContext:\n{self.enriched_context}\n"
+        return result
 
 
 @dataclass

@@ -68,8 +68,12 @@ CREATE_STORIES_TOOL: ToolParam = {
                             "items": {"type": "string"},
                             "description": "The acceptance criteria for the user story",
                         },
+                        "enriched_context": {
+                            "type": "string",
+                            "description": "Additional context and details for the story from PRD and tech spec",
+                        },
                     },
-                    "required": ["title", "acceptance_criteria"],
+                    "required": ["title", "acceptance_criteria", "enriched_context"],
                     "additionalProperties": False,
                 },
             }
@@ -125,6 +129,41 @@ def problem_break_down(
     return parse_stories_from_response(response)
 
 
+def enrich_context(
+    story: Story,
+    workflow_input: WorkflowInput,
+    comments: str = "",
+) -> Story:
+    """Enrich a user story with details from PRD and tech spec."""
+    logger = get_logger()
+    is_revision = bool(comments)
+    logger.info(
+        "enrich_context_started", story_title=story.title, is_revision=is_revision
+    )
+
+    # Always use enrich context prompt, with or without comments
+    prompt = get_prompt(
+        "enrich_context.md",
+        story_title=story.title,
+        acceptance_criteria="\n".join(story.acceptance_criteria),
+        comments=comments,
+        prd_content=workflow_input.prd_content,
+        tech_spec_content=workflow_input.tech_spec_content,
+    )
+
+    # Call OpenAI API and parse response
+    response = call_openai_api(prompt, [CREATE_STORIES_TOOL])
+
+    # Display reasoning summaries
+    reasoning_summaries = extract_reasoning_summaries(response)
+    display_reasoning_summaries(reasoning_summaries)
+
+    updated_stories = parse_stories_from_response(response)
+
+    # Return the first (and should be only) story from the response
+    return updated_stories[0] if updated_stories else story
+
+
 def define_acceptance_criteria(
     story: Story,
     comments: str = "",
@@ -136,13 +175,11 @@ def define_acceptance_criteria(
         "acceptance_criteria_started", story_title=story.title, is_revision=is_revision
     )
 
-    if story.acceptance_criteria and comments:
-        # If ACs exist and there are comments, this is a revision - use iterating on stories prompt
-        prompt = get_prompt("iterating_on_stories.md", comments=comments)
-    else:
-        # Initial AC generation - use acceptance criteria prompt template
-        user_story_text = f"Title: {story.title}\nAcceptance Criteria: {', '.join(story.acceptance_criteria)}"
-        prompt = get_prompt("acceptance_criteria.md", user_story=user_story_text)
+    # Always use acceptance criteria prompt, with or without comments
+    user_story_text = f"Title: {story.title}\nAcceptance Criteria: {', '.join(story.acceptance_criteria)}"
+    prompt = get_prompt(
+        "acceptance_criteria.md", user_story=user_story_text, comments=comments
+    )
 
     # Call OpenAI API and parse response
     response = call_openai_api(prompt, [CREATE_STORIES_TOOL])
@@ -186,6 +223,9 @@ def print_story_with_criteria(story: Story, story_prefix: str = "Story:") -> Non
     print("Acceptance Criteria:")
     for j, ac in enumerate(story.acceptance_criteria, 1):
         print(f"  {j}. {ac}")
+    if story.enriched_context:
+        print("\nContext:")
+        print(f"{story.enriched_context}")
     print()
 
 
@@ -199,3 +239,6 @@ def print_final_stories(stories: List[Story]) -> None:
         print("   Acceptance Criteria:")
         for j, ac in enumerate(story.acceptance_criteria, 1):
             print(f"     {j}. {ac}")
+        if story.enriched_context:
+            print("   Context:")
+            print(f"     {story.enriched_context}")

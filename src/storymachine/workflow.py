@@ -6,6 +6,7 @@ from .activities import (
     get_human_input,
     problem_break_down,
     define_acceptance_criteria,
+    enrich_context,
     spinner,
     print_story_titles,
     print_story_with_criteria,
@@ -49,44 +50,51 @@ def w1(workflow_input: WorkflowInput) -> List[Story]:
             print("\nRevising stories based on feedback...\n")
             comments = response.comment or ""
 
-    # Define acceptance criteria for each story
+    # Define acceptance criteria and enrich context for each story
     for i, story in enumerate(stories):
-        print(f"\n--- Defining Acceptance Criteria for Story {i + 1} ---")
+        print(f"\n--- Detailing Story {i + 1} ---")
 
-        # Set default empty states for acceptance criteria
+        # Set default empty states
         updated_story = story
-        ac_comments = ""
+        comments = ""
 
         while True:
             # Generate or revise acceptance criteria based on current state
             spinner_text = (
                 "Defining Acceptance Criteria"
-                if not ac_comments
+                if not comments
                 else "Revising Acceptance Criteria"
             )
             with spinner(spinner_text):
-                updated_story = define_acceptance_criteria(updated_story, ac_comments)
+                updated_story = define_acceptance_criteria(updated_story, comments)
+
+            # Enrich context with PRD and tech spec details
+            spinner_text = (
+                "Detailing the story" if not comments else "Revising the story"
+            )
+            with spinner(spinner_text):
+                updated_story = enrich_context(updated_story, workflow_input, comments)
 
             # Display story and its ACs
             print_story_with_criteria(updated_story)
 
-            # Get user feedback for this story's ACs
+            # Get user feedback for this story
             response = get_human_input()
 
             if response.status == FeedbackStatus.ACCEPTED:
-                logger.info("acceptance_criteria_approved", story_index=i)
-                print("Acceptance criteria approved!")
+                logger.info("story_approved", story_index=i)
+                print("Story approved!")
                 stories[i] = updated_story  # Update the story in the list
                 break
             else:
                 logger.info(
-                    "acceptance_criteria_rejected",
+                    "story_rejected",
                     story_index=i,
                     comment=response.comment,
                 )
-                print(f"Acceptance criteria rejected. Comments: {response.comment}")
-                print("\nRevising acceptance criteria based on feedback...\n")
-                ac_comments = response.comment or ""
+                print(f"Story rejected. Comments: {response.comment}")
+                print("\nRevising story based on feedback...\n")
+                comments = response.comment or ""
 
     # Print final list of all stories with their ACs
     print_final_stories(stories)

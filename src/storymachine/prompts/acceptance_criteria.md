@@ -1,8 +1,12 @@
-Write acceptance criteria (ACs) for this user story using the `create stories` tool with the following considerations.
+Write acceptance criteria (ACs) for this user story using the `create stories` tool with the following considerations. If feedback is present, then revise the existing acceptance criteria as per the feedback.
 
 <user_story>
 {user_story}
 </user_story>
+
+<feedback>
+{comments}
+</feedback>
 
 <considerations>
 - Verifiable by a product manager. So, no technical terms, preferably a blackbox test. Domain based usage words, not UI or technical words.

@@ -14,6 +14,7 @@ from openai.types.responses import (
 
 from .ai import get_prompt, call_openai_api
 from .types import FeedbackResponse, Story, WorkflowInput, FeedbackStatus
+from .logging import get_logger
 
 
 @contextmanager
@@ -77,12 +78,15 @@ CREATE_STORIES_TOOL: ToolParam = {
 
 def parse_stories_from_response(response) -> List[Story]:
     """Parse stories from OpenAI response."""
-    return [
+    logger = get_logger()
+    stories = [
         Story(**story_data)
         for output in response.output
         if output.type == "function_call"
         for story_data in json.loads(output.arguments)["stories"]
     ]
+    logger.info("stories_parsed", count=len(stories))
+    return stories
 
 
 def problem_break_down(
@@ -91,6 +95,10 @@ def problem_break_down(
     comments: str = "",
 ) -> List[Story]:
     """Break down the problem into user stories."""
+    logger = get_logger()
+    is_revision = bool(stories)
+    logger.info("problem_breakdown_started", is_revision=is_revision)
+
     if stories:
         # If stories exist, this is a revision - use iterating on stories prompt
         prompt = get_prompt("iterating_on_stories.md", comments=comments)
@@ -112,6 +120,12 @@ def define_acceptance_criteria(
     comments: str = "",
 ) -> Story:
     """Define acceptance criteria for a user story."""
+    logger = get_logger()
+    is_revision = bool(story.acceptance_criteria and comments)
+    logger.info(
+        "acceptance_criteria_started", story_title=story.title, is_revision=is_revision
+    )
+
     if story.acceptance_criteria and comments:
         # If ACs exist and there are comments, this is a revision - use iterating on stories prompt
         prompt = get_prompt("iterating_on_stories.md", comments=comments)

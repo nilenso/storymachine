@@ -9,6 +9,7 @@ dependencies = [
     "openai>=0.100.2",
     "pydantic-settings>=2.10.1",
     "python-fasthtml>=0.12.25",
+    "structlog>=25.4.0",
     "websockets>=15.0.1",
 ]
 

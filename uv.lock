@@ -1443,6 +1443,7 @@ dependencies = [
     { name = "openai" },
     { name = "pydantic-settings" },
     { name = "python-fasthtml" },
+    { name = "structlog" },
     { name = "websockets" },
 ]
 
@@ -1465,6 +1466,7 @@ requires-dist = [
     { name = "openai", specifier = ">=0.100.2" },
     { name = "pydantic-settings", specifier = ">=2.10.1" },
     { name = "python-fasthtml", specifier = ">=0.12.25" },
+    { name = "structlog", specifier = ">=25.4.0" },
     { name = "websockets", specifier = ">=15.0.1" },
 ]
 
@@ -1479,6 +1481,15 @@ dev = [
     { name = "python-lsp-ruff", specifier = ">=2.2.2" },
     { name = "python-lsp-server", specifier = ">=1.13.1" },
     { name = "ruff", specifier = ">=0.12.10" },
+]
+
+[[package]]
+name = "structlog"
+version = "25.4.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/79/b9/6e672db4fec07349e7a8a8172c1a6ae235c58679ca29c3f86a61b5e59ff3/structlog-25.4.0.tar.gz", hash = "sha256:186cd1b0a8ae762e29417095664adf1d6a31702160a46dacb7796ea82f7409e4", size = 1369138, upload-time = "2025-06-02T08:21:12.971Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a0/4a/97ee6973e3a73c74c8120d59829c3861ea52210667ec3e7a16045c62b64d/structlog-25.4.0-py3-none-any.whl", hash = "sha256:fe809ff5c27e557d14e613f45ca441aabda051d119ee5a0102aaba6ce40eed2c", size = 68720, upload-time = "2025-06-02T08:21:11.43Z" },
 ]
 
 [[package]]

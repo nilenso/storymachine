@@ -9,6 +9,7 @@ from openai.types.responses import (
 )
 
 from .config import Settings
+from .logging import get_logger
 
 # Global conversation state
 conversation_id: Optional[str] = None
@@ -43,10 +44,12 @@ def get_or_create_conversation() -> str:
     """Get existing conversation ID or create a new one."""
     global conversation_id
     if conversation_id is None:
+        logger = get_logger()
         settings = Settings()  # pyright: ignore[reportCallIssue]
         client = OpenAI(api_key=settings.openai_api_key)
         conversation = client.conversations.create()
         conversation_id = conversation.id
+        logger.info("conversation_created", conversation_id=conversation_id)
     return conversation_id
 
 
@@ -62,6 +65,7 @@ def call_openai_api(
     tools: List[ToolParam],
 ):
     """Call OpenAI API and return the response."""
+    logger = get_logger()
     settings = Settings()  # pyright: ignore[reportCallIssue]
     client = OpenAI(api_key=settings.openai_api_key)
     model = settings.model
@@ -80,7 +84,19 @@ def call_openai_api(
         request_params["reasoning"] = {"effort": settings.reasoning_effort}
         request_params["text"] = {"verbosity": "low"}
 
+    logger.info(
+        "openai_request",
+        model=model,
+        conversation_id=request_params["conversation"],
+        request_params=request_params,
+    )
     response = client.responses.create(**request_params)
+    logger.info(
+        "openai_response",
+        status="success",
+        tool_calls=len([o for o in response.output if o.type == "function_call"]),
+        response_output=response.output,
+    )
 
     # Process tool calls and send results back
     for tool_call in response.output:
@@ -110,6 +126,14 @@ def call_openai_api(
     if any(tool_call.type == "function_call" for tool_call in response.output):
         request_params["input"] = input_messages
         request_params.pop("tool_choice", None)  # Remove tool_choice for follow-up call
+        logger.info(
+            "openai_followup_request", model=model, request_params=request_params
+        )
         _response = client.responses.create(**request_params)
+        logger.info(
+            "openai_followup_response",
+            status="success",
+            response_output=_response.output,
+        )
 
     return response

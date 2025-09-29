@@ -107,6 +107,27 @@ def problem_break_down(
     return parse_stories_from_response(response)
 
 
+def define_acceptance_criteria(
+    story: Story,
+    comments: str = "",
+) -> Story:
+    """Define acceptance criteria for a user story."""
+    if story.acceptance_criteria and comments:
+        # If ACs exist and there are comments, this is a revision - use iterating on stories prompt
+        prompt = get_prompt("iterating_on_stories.md", comments=comments)
+    else:
+        # Initial AC generation - use acceptance criteria prompt template
+        user_story_text = f"Title: {story.title}\nAcceptance Criteria: {', '.join(story.acceptance_criteria)}"
+        prompt = get_prompt("acceptance_criteria.md", user_story=user_story_text)
+
+    # Call OpenAI API and parse response
+    response = call_openai_api(prompt, [CREATE_STORIES_TOOL])
+    updated_stories = parse_stories_from_response(response)
+
+    # Return the first (and should be only) story from the response
+    return updated_stories[0] if updated_stories else story
+
+
 def get_human_input() -> FeedbackResponse:
     """Get user approval/rejection response from CLI."""
     while True:

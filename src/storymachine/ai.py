@@ -1,11 +1,15 @@
 """AI utilities and OpenAI abstraction for StoryMachine."""
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 from openai import OpenAI
 from openai.types.responses import (
     ToolParam,
+    Response,
+    ResponseReasoningItem,
+    ResponseFunctionToolCall,
+    ResponseOutputMessage,
 )
 
 from .config import Settings
@@ -60,80 +64,190 @@ def get_prompt(filename: str, **kwargs: Any) -> str:
     return prompt_template.format(**kwargs)
 
 
+def _create_and_parse_response(
+    client: OpenAI, params: dict, logger, log_prefix: str
+) -> Response:
+    """Create response, parse it, log it, and return with parsed attributes."""
+    # Create response using responses.create()
+    response = client.responses.create(**params)
+
+    # Extract reasoning summaries and function calls using proper types
+    reasoning_items = [
+        item for item in response.output if isinstance(item, ResponseReasoningItem)
+    ]
+    function_calls = [
+        item for item in response.output if isinstance(item, ResponseFunctionToolCall)
+    ]
+
+    reasoning_summaries = []
+    for reasoning_item in reasoning_items:
+        if reasoning_item.summary:
+            for summary_part in reasoning_item.summary:
+                if hasattr(summary_part, "text"):
+                    reasoning_summaries.append(summary_part.text)
+
+    # Log response details
+    logger.info(
+        f"{log_prefix}_response",
+        status="success",
+        tool_calls=len(function_calls),
+        reasoning_items=len(reasoning_items),
+        reasoning_summary_length=sum(len(s) for s in reasoning_summaries),
+        response_output=[item.dict() for item in response.output],
+    )
+
+    # Attach parsed data to response using setattr for type safety
+    setattr(response, "_reasoning_items", reasoning_items)
+    setattr(response, "_function_calls", function_calls)
+    setattr(response, "_reasoning_summaries", reasoning_summaries)
+
+    return response
+
+
+def extract_reasoning_summaries(response: Response) -> List[str]:
+    """Extract reasoning summary text from OpenAI response."""
+    # Check if we have combined reasoning summaries from multiple API calls
+    if hasattr(response, "_combined_reasoning_summaries"):
+        return getattr(response, "_combined_reasoning_summaries", [])
+
+    # Use pre-parsed reasoning summaries if available
+    if hasattr(response, "_reasoning_summaries"):
+        return getattr(response, "_reasoning_summaries", [])
+
+    # Fallback to extracting from response output
+    summaries = []
+    for item in response.output:
+        if isinstance(item, ResponseReasoningItem) and item.summary:
+            for summary_part in item.summary:
+                if hasattr(summary_part, "text"):
+                    summaries.append(summary_part.text)
+    return summaries
+
+
+def display_reasoning_summaries(summaries: List[str]) -> None:
+    """Display reasoning summaries on CLI in a formatted way."""
+    if not summaries:
+        return
+
+    print("\n🧠 Model Reasoning:")
+    print("─" * 60)
+    for i, summary in enumerate(summaries):
+        if i > 0:
+            print("─" * 60)
+        print(summary)
+    print("─" * 60)
+    print()
+
+
 def call_openai_api(
     prompt: str,
     tools: List[ToolParam],
-):
-    """Call OpenAI API and return the response."""
+) -> Response:
+    """Call OpenAI API using the Responses API with proper context management."""
     logger = get_logger()
     settings = Settings()  # pyright: ignore[reportCallIssue]
     client = OpenAI(api_key=settings.openai_api_key)
     model = settings.model
 
-    input_messages: List[Dict[str, Any]] = [{"role": "user", "content": prompt}]
-
-    request_params = {
+    # Build request parameters for responses.create()
+    create_params = {
         "model": model,
         "tools": tools,
-        "input": input_messages,
+        "input": [{"role": "user", "content": prompt}],
         "tool_choice": "required",
         "conversation": get_or_create_conversation(),
     }
 
+    # Add reasoning parameters for supported models
     if supports_reasoning_parameters(model):
-        request_params["reasoning"] = {"effort": settings.reasoning_effort}
-        request_params["text"] = {"verbosity": "low"}
+        create_params["reasoning"] = {
+            "effort": settings.reasoning_effort,
+            "summary": "auto",
+        }
+        create_params["text"] = {"verbosity": "low"}
 
     logger.info(
         "openai_request",
         model=model,
-        conversation_id=request_params["conversation"],
-        request_params=request_params,
+        conversation_id=create_params["conversation"],
+        method="responses.create",
+        request_params={
+            k: v
+            if k != "tools"
+            else [tool.dict() if hasattr(tool, "dict") else tool for tool in v]
+            for k, v in create_params.items()
+        },
     )
-    response = client.responses.create(**request_params)
-    logger.info(
-        "openai_response",
-        status="success",
-        tool_calls=len([o for o in response.output if o.type == "function_call"]),
-        response_output=response.output,
-    )
 
-    # Process tool calls and send results back
-    for tool_call in response.output:
-        if tool_call.type != "function_call":
-            continue
+    # Create and parse initial response
+    response = _create_and_parse_response(client, create_params, logger, "openai")
 
-        # Add the original tool call to conversation history
-        input_messages.append(
-            {
-                "type": "function_call",
-                "call_id": tool_call.call_id,
-                "name": tool_call.name,
-                "arguments": tool_call.arguments,
+    function_calls = getattr(response, "_function_calls", [])
+    if function_calls:
+        # Create function call outputs (empty since we don't execute them)
+        function_outputs = []
+        for func_call in function_calls:
+            function_outputs.append(
+                {
+                    "type": "function_call_output",
+                    "call_id": func_call.call_id,
+                    "output": "",
+                }
+            )
+
+        # Build follow-up input with just function outputs
+        # Let conversation parameter handle reasoning context automatically
+        followup_input = function_outputs
+
+        followup_create_params = {
+            "model": model,
+            "input": followup_input,
+            "conversation": get_or_create_conversation(),
+        }
+
+        # Add reasoning parameters for supported models
+        if supports_reasoning_parameters(model):
+            followup_create_params["reasoning"] = {
+                "effort": settings.reasoning_effort,
+                "summary": "auto",
             }
-        )
+            followup_create_params["text"] = {"verbosity": "low"}
 
-        # Add the tool call output
-        input_messages.append(
-            {
-                "type": "function_call_output",
-                "call_id": tool_call.call_id,
-                "output": "",
-            }
-        )
-
-    # If there were tool calls, make a second API call with the results
-    if any(tool_call.type == "function_call" for tool_call in response.output):
-        request_params["input"] = input_messages
-        request_params.pop("tool_choice", None)  # Remove tool_choice for follow-up call
         logger.info(
-            "openai_followup_request", model=model, request_params=request_params
-        )
-        _response = client.responses.create(**request_params)
-        logger.info(
-            "openai_followup_response",
-            status="success",
-            response_output=_response.output,
+            "openai_followup_request",
+            model=model,
+            conversation_id=get_or_create_conversation(),
+            method="responses.create",
+            input_items=len(followup_input),
+            function_outputs_included=len(function_outputs),
+            request_params={
+                k: v
+                if k != "tools"
+                else [tool.dict() if hasattr(tool, "dict") else tool for tool in v]
+                if "tools" in followup_create_params
+                else v
+                for k, v in followup_create_params.items()
+            },
         )
 
+        # Create and parse follow-up response
+        followup_response = _create_and_parse_response(
+            client, followup_create_params, logger, "openai_followup"
+        )
+
+        # Combine reasoning summaries from both responses for display
+        response_summaries = getattr(response, "_reasoning_summaries", [])
+        followup_summaries = getattr(followup_response, "_reasoning_summaries", [])
+        combined_summaries = response_summaries + followup_summaries
+        setattr(followup_response, "_combined_reasoning_summaries", combined_summaries)
+
+        # Add original function calls to final response for story parsing
+        # (They're in input context but we need them in output for parse_stories_from_response)
+        original_function_calls = getattr(response, "_function_calls", [])
+        if original_function_calls:
+            followup_response.output.extend(original_function_calls)
+
+        return followup_response
+
+    # Store reasoning summaries for display (already attached by helper function)
     return response

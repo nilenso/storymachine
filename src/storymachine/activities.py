@@ -12,7 +12,12 @@ from openai.types.responses import (
     ToolParam,
 )
 
-from .ai import get_prompt, call_openai_api
+from .ai import (
+    get_prompt,
+    call_openai_api,
+    extract_reasoning_summaries,
+    display_reasoning_summaries,
+)
 from .types import FeedbackResponse, Story, WorkflowInput, FeedbackStatus
 from .logging import get_logger
 
@@ -112,6 +117,11 @@ def problem_break_down(
 
     # Call OpenAI API and parse response
     response = call_openai_api(prompt, [CREATE_STORIES_TOOL])
+
+    # Display reasoning summaries
+    reasoning_summaries = extract_reasoning_summaries(response)
+    display_reasoning_summaries(reasoning_summaries)
+
     return parse_stories_from_response(response)
 
 
@@ -136,6 +146,11 @@ def define_acceptance_criteria(
 
     # Call OpenAI API and parse response
     response = call_openai_api(prompt, [CREATE_STORIES_TOOL])
+
+    # Display reasoning summaries
+    reasoning_summaries = extract_reasoning_summaries(response)
+    display_reasoning_summaries(reasoning_summaries)
+
     updated_stories = parse_stories_from_response(response)
 
     # Return the first (and should be only) story from the response

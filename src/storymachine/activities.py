@@ -155,6 +155,7 @@ def problem_break_down(
             "problem_break_down.md",
             prd_content=workflow_input.prd_content,
             tech_spec_content=workflow_input.tech_spec_content,
+            repo_context=workflow_input.repo_context or "",
         )
 
     # Call OpenAI API and parse response
@@ -187,6 +188,7 @@ def enrich_context(
         comments=comments,
         prd_content=workflow_input.prd_content,
         tech_spec_content=workflow_input.tech_spec_content,
+        repo_context=workflow_input.repo_context or "",
     )
 
     # Call OpenAI API and parse response

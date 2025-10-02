@@ -28,6 +28,7 @@ class WorkflowInput:
     prd_content: str
     tech_spec_content: str
     repo_path: str
+    repo_context: Optional[str] = None
 
 
 class FeedbackStatus(Enum):

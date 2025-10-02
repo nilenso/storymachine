@@ -9,6 +9,9 @@ From the sources below, produce a list of user stories via the `create_stories` 
 <technical_specification_document>
 {tech_spec_content}
 </technical_specification_document>
+<repository_context>
+{repo_context}
+</repository_context>
 </sources>
 
 <breakdown>

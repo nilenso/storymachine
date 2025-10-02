@@ -25,15 +25,11 @@ async def w1(workflow_input: WorkflowInput) -> List[Story]:
     # Get codebase context questions
     print("\n--- Getting Codebase Context ---\n")
     with spinner("Analyzing codebase needs"):
-        codebase_questions = await get_codebase_context(workflow_input)
+        workflow_input.repo_context = await get_codebase_context(workflow_input)
 
-    # Display the questions
-    print("\n📋 Codebase Context Questions:")
-    print("─" * 60)
-    print(codebase_questions)
-    print("─" * 60)
-    print("\n[Temporary exit - workflow will continue in next iteration]\n")
-    return []
+    logger.info(
+        "codebase_context_obtained", context_length=len(workflow_input.repo_context)
+    )
 
     # Set default empty states
     stories: List[Story] = []

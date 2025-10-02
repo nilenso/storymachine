@@ -27,6 +27,7 @@ class WorkflowInput:
 
     prd_content: str
     tech_spec_content: str
+    repo_path: str
 
 
 class FeedbackStatus(Enum):

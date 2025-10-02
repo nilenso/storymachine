@@ -16,6 +16,7 @@ from openai.types.responses import (
 from .ai import (
     get_prompt,
     call_openai_api,
+    answer_repo_questions,
     extract_reasoning_summaries,
     display_reasoning_summaries,
 )
@@ -111,26 +112,28 @@ def parse_text_from_response(response) -> str:
     return text_content
 
 
-def get_codebase_context(workflow_input: WorkflowInput) -> str:
+async def get_codebase_context(workflow_input: WorkflowInput) -> str:
     """Get codebase context questions based on PRD and tech spec."""
     logger = get_logger()
     logger.info("codebase_context_started")
 
-    # Build prompt with PRD and tech spec
+    # Step 1: Generate questions based on PRD and tech spec
     prompt = get_prompt(
         "repo_questions.md",
         prd_content=workflow_input.prd_content,
         tech_spec_content=workflow_input.tech_spec_content,
     )
 
-    # Call OpenAI API without tools to get text response
     response = call_openai_api(prompt)
+    questions = parse_text_from_response(response)
 
-    # Parse text from response
-    result = parse_text_from_response(response)
+    logger.info("codebase_questions_generated", questions_length=len(questions))
 
-    logger.info("codebase_context_completed", response_length=len(result))
-    return result
+    # Step 2: Use Claude Agent SDK to query the codebase
+    codebase_context = await answer_repo_questions(workflow_input.repo_path, questions)
+
+    logger.info("codebase_context_completed", response_length=len(codebase_context))
+    return codebase_context
 
 
 def problem_break_down(

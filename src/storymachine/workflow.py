@@ -17,7 +17,7 @@ from .types import FeedbackStatus, Story, WorkflowInput
 from .logging import get_logger
 
 
-def w1(workflow_input: WorkflowInput) -> List[Story]:
+async def w1(workflow_input: WorkflowInput) -> List[Story]:
     """Simple workflow: break down PRD and tech spec into user stories."""
     logger = get_logger()
     logger.info("workflow_started")
@@ -25,7 +25,7 @@ def w1(workflow_input: WorkflowInput) -> List[Story]:
     # Get codebase context questions
     print("\n--- Getting Codebase Context ---\n")
     with spinner("Analyzing codebase needs"):
-        codebase_questions = get_codebase_context(workflow_input)
+        codebase_questions = await get_codebase_context(workflow_input)
 
     # Display the questions
     print("\n📋 Codebase Context Questions:")

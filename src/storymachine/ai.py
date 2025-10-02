@@ -1,5 +1,7 @@
 """AI utilities and OpenAI abstraction for StoryMachine."""
 
+import os
+import time
 from pathlib import Path
 from typing import Any, List, Optional
 
@@ -143,6 +145,7 @@ def call_openai_api(
     tools: Optional[List[ToolParam]] = None,
 ) -> Response:
     """Call OpenAI API using the Responses API with proper context management."""
+    start_time = time.time()
     logger = get_logger()
     settings = Settings()  # pyright: ignore[reportCallIssue]
     client = OpenAI(api_key=settings.openai_api_key)
@@ -249,7 +252,53 @@ def call_openai_api(
         if original_function_calls:
             followup_response.output.extend(original_function_calls)
 
+        duration = time.time() - start_time
+        logger.info("openai_api_duration", duration_seconds=duration)
         return followup_response
 
     # Store reasoning summaries for display (already attached by helper function)
+    duration = time.time() - start_time
+    logger.info("openai_api_duration", duration_seconds=duration)
     return response
+
+
+async def answer_repo_questions(repo_path: str, questions: str) -> str:
+    """Use Claude Agent SDK to query the codebase and answer questions."""
+    start_time = time.time()
+    logger = get_logger()
+    settings = Settings()  # pyright: ignore[reportCallIssue]
+
+    if not settings.anthropic_api_key:
+        logger.error("anthropic_api_key_not_found")
+        raise ValueError("ANTHROPIC_API_KEY not found in .env file")
+
+    # Set environment variable for Claude SDK
+    os.environ["ANTHROPIC_API_KEY"] = settings.anthropic_api_key
+
+    # Import Claude Agent SDK
+    from claude_agent_sdk import query, ClaudeAgentOptions
+    from claude_agent_sdk.types import ResultMessage
+
+    # Create options with no tools, no mcp, no hooks, no memory
+    options = ClaudeAgentOptions(
+        cwd=repo_path,
+        allowed_tools=[],  # No tools
+    )
+
+    logger.info("repo_query_started", repo_path=repo_path)
+
+    # Query the codebase with the questions and extract result from ResultMessage
+    response_text = ""
+    async for message in query(prompt=questions, options=options):
+        if isinstance(message, ResultMessage) and message.result:
+            response_text = message.result
+            # Don't break - continue consuming messages to avoid generator cleanup errors
+
+    duration = time.time() - start_time
+    logger.info(
+        "claude_api_duration",
+        duration_seconds=duration,
+        response_length=len(response_text),
+    )
+    logger.info("claude_response", response=response_text)
+    return response_text

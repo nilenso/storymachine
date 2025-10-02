@@ -140,7 +140,7 @@ def display_reasoning_summaries(summaries: List[str]) -> None:
 
 def call_openai_api(
     prompt: str,
-    tools: List[ToolParam],
+    tools: Optional[List[ToolParam]] = None,
 ) -> Response:
     """Call OpenAI API using the Responses API with proper context management."""
     logger = get_logger()
@@ -151,11 +151,14 @@ def call_openai_api(
     # Build request parameters for responses.create()
     create_params = {
         "model": model,
-        "tools": tools,
         "input": [{"role": "user", "content": prompt}],
-        "tool_choice": "required",
         "conversation": get_or_create_conversation(),
     }
+
+    # Add tools and tool_choice only if tools are provided
+    if tools:
+        create_params["tools"] = tools
+        create_params["tool_choice"] = "required"
 
     # Add reasoning parameters for supported models
     if supports_reasoning_parameters(model):

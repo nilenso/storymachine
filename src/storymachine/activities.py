@@ -10,6 +10,7 @@ from typing import List
 
 from openai.types.responses import (
     ToolParam,
+    ResponseOutputMessage,
 )
 
 from .ai import (
@@ -96,6 +97,40 @@ def parse_stories_from_response(response) -> List[Story]:
     ]
     logger.info("stories_parsed", count=len(stories))
     return stories
+
+
+def parse_text_from_response(response) -> str:
+    """Parse text content from OpenAI response."""
+    text_content = ""
+    for item in response.output:
+        if isinstance(item, ResponseOutputMessage):
+            # ResponseOutputMessage has a 'content' field that contains text parts
+            for content_part in item.content:
+                if hasattr(content_part, "text"):
+                    text_content += content_part.text  # pyright: ignore[reportAttributeAccessIssue]
+    return text_content
+
+
+def get_codebase_context(workflow_input: WorkflowInput) -> str:
+    """Get codebase context questions based on PRD and tech spec."""
+    logger = get_logger()
+    logger.info("codebase_context_started")
+
+    # Build prompt with PRD and tech spec
+    prompt = get_prompt(
+        "repo_questions.md",
+        prd_content=workflow_input.prd_content,
+        tech_spec_content=workflow_input.tech_spec_content,
+    )
+
+    # Call OpenAI API without tools to get text response
+    response = call_openai_api(prompt)
+
+    # Parse text from response
+    result = parse_text_from_response(response)
+
+    logger.info("codebase_context_completed", response_length=len(result))
+    return result
 
 
 def problem_break_down(

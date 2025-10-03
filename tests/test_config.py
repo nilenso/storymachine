@@ -22,16 +22,22 @@ class TestSettings:
         assert settings.openai_api_key == test_key
 
     def test_settings_missing_api_key_raises_validation_error(
-        self, monkeypatch
+        self, monkeypatch, tmp_path: Path
     ) -> None:
         """Test that missing API key raises ValidationError."""
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
 
-        with pytest.raises(ValidationError) as exc_info:
-            Settings()  # pyright: ignore[reportCallIssue]
+        # Change to temp directory to avoid loading project .env file
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            with pytest.raises(ValidationError) as exc_info:
+                Settings()  # pyright: ignore[reportCallIssue]
 
-        error_str = str(exc_info.value)
-        assert "OPENAI_API_KEY" in error_str or "Field required" in error_str
+            error_str = str(exc_info.value)
+            assert "OPENAI_API_KEY" in error_str or "Field required" in error_str
+        finally:
+            os.chdir(original_cwd)
 
     def test_settings_from_env_file(self, tmp_path: Path) -> None:
         """Test Settings loading from .env file."""
@@ -82,7 +88,7 @@ class TestSettings:
 
         assert "frozen" in str(exc_info.value).lower()
 
-    def test_settings_field_alias(self, monkeypatch) -> None:
+    def test_settings_field_alias(self, monkeypatch, tmp_path: Path) -> None:
         """Test that the field alias works correctly."""
         test_key = "sk-alias-test-key"
         monkeypatch.setenv("OPENAI_API_KEY", test_key)
@@ -95,9 +101,15 @@ class TestSettings:
         # Verify the field uses the OPENAI_API_KEY environment variable
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
 
-        with pytest.raises(ValidationError):
-            # Should fail because OPENAI_API_KEY is not set
-            Settings()  # pyright: ignore[reportCallIssue]
+        # Change to temp directory to avoid loading project .env file
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            with pytest.raises(ValidationError):
+                # Should fail because OPENAI_API_KEY is not set
+                Settings()  # pyright: ignore[reportCallIssue]
+        finally:
+            os.chdir(original_cwd)
 
     def test_settings_empty_api_key_creates_settings(self, monkeypatch) -> None:
         """Test that empty API key creates settings (Pydantic allows empty strings)."""
@@ -116,14 +128,20 @@ class TestSettings:
         settings = Settings()  # pyright: ignore[reportCallIssue]
         assert settings.openai_api_key == "   "
 
-    def test_settings_default_model(self, monkeypatch) -> None:
+    def test_settings_default_model(self, monkeypatch, tmp_path: Path) -> None:
         """Test that model defaults when not provided."""
         monkeypatch.setenv("OPENAI_API_KEY", "test-key")
         monkeypatch.delenv("MODEL", raising=False)
 
-        settings = Settings()  # pyright: ignore[reportCallIssue]
+        # Change to temp directory to avoid loading project .env file
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            settings = Settings()  # pyright: ignore[reportCallIssue]
 
-        assert settings.model == "gpt-5"
+            assert settings.model == "gpt-5"
+        finally:
+            os.chdir(original_cwd)
 
     def test_settings_model_env_var(self, monkeypatch) -> None:
         """Test that model can be set via environment variable."""

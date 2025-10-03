@@ -19,3 +19,9 @@ wheels/
 
 # Code coverage file
 .coverage
+
+# Local input test data
+test-data/
+
+# Local claude settings
+.claude/settings.local.json

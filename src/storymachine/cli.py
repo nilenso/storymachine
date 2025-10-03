@@ -29,14 +29,14 @@ def main():
         "--repo",
         type=str,
         required=True,
-        help="Path to the repository directory",
+        help="GitHub repository URL (e.g., https://github.com/owner/repo)",
     )
 
     args = parser.parse_args()
 
     prd_path = Path(args.prd)
     tech_spec_path = Path(args.tech_spec)
-    repo_path = Path(args.repo)
+    repo_url = args.repo
 
     if not prd_path.exists():
         print(f"Error: PRD file not found: {prd_path}", file=sys.stderr)
@@ -46,23 +46,13 @@ def main():
         print(f"Error: Tech spec file not found: {tech_spec_path}", file=sys.stderr)
         sys.exit(1)
 
-    if not repo_path.exists():
-        print(f"Error: Repository path not found: {repo_path}", file=sys.stderr)
-        sys.exit(1)
-
-    if not repo_path.is_dir():
-        print(
-            f"Error: Repository path is not a directory: {repo_path}", file=sys.stderr
-        )
-        sys.exit(1)
-
     # Read file contents and create workflow input
     prd_content = prd_path.read_text()
     tech_spec_content = tech_spec_path.read_text()
     workflow_input = WorkflowInput(
         prd_content=prd_content,
         tech_spec_content=tech_spec_content,
-        repo_path=str(repo_path.absolute()),
+        repo_url=repo_url,
     )
 
     # Display current configuration

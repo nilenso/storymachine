@@ -16,7 +16,6 @@ from openai.types.responses import (
 from .ai import (
     get_prompt,
     call_openai_api,
-    answer_repo_questions,
     extract_reasoning_summaries,
     display_reasoning_summaries,
 )
@@ -114,7 +113,12 @@ def parse_text_from_response(response) -> str:
 
 async def get_codebase_context(workflow_input: WorkflowInput) -> str:
     """Get codebase context questions based on PRD and tech spec."""
+    from ask_github import ask
+
+    from .config import Settings
+
     logger = get_logger()
+    settings = Settings()  # pyright: ignore[reportCallIssue]
     logger.info("codebase_context_started")
 
     # Step 1: Generate questions based on PRD and tech spec
@@ -129,10 +133,19 @@ async def get_codebase_context(workflow_input: WorkflowInput) -> str:
 
     logger.info("codebase_questions_generated", questions_length=len(questions))
 
-    # Step 2: Use Claude Agent SDK to query the codebase
-    codebase_context = await answer_repo_questions(workflow_input.repo_path, questions)
+    # Step 2: Use ask-github to query the GitHub repository
+    codebase_context = ask(
+        repo_url=workflow_input.repo_url,
+        prompt=questions,
+        github_token=settings.github_token,
+        max_iterations=100,
+    )
 
-    logger.info("codebase_context_completed", response_length=len(codebase_context))
+    logger.info(
+        "codebase_context_completed",
+        response_length=len(codebase_context),
+        response=codebase_context,
+    )
     return codebase_context
 
 

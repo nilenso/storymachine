@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "ask-github",
     "claude-agent-sdk>=0.1.0",
     "fastapi>=0.116.1",
     "openai>=0.100.2",
@@ -40,3 +41,6 @@ enable_ruff = true
 
 [tool.marimo.diagnostics]
 enabled = true
+
+[tool.uv.sources]
+ask-github = { git = "https://github.com/nilenso/ask-github.git" }

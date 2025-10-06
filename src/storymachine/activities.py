@@ -136,7 +136,7 @@ async def get_codebase_context(workflow_input: WorkflowInput) -> str:
     # Step 2: Use ask-github to query the GitHub repository
     codebase_context = ask(
         repo_url=workflow_input.repo_url,
-        prompt=questions,
+        prompt="answer the following questions using parallel tool calls, and don't read the entire codebase, only find files we're interested in, and read them to get what we want: \n" + questions,
         github_token=settings.github_token,
         max_iterations=100,
     )

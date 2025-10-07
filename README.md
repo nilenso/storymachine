@@ -38,10 +38,10 @@ echo "OPENAI_API_KEY=your-api-key-here" > .env
 
 ## Usage
 
-Run StoryMachine with your PRD, technical specification, and repository path:
+Run StoryMachine with your PRD, technical specification, and repository URL:
 
 ```bash
-uv run storymachine --prd path/to/your/prd.md --tech-spec path/to/your/tech-spec.md --repo path/to/your/repo
+uv run storymachine --prd path/to/your/prd.md --tech-spec path/to/your/tech-spec.md --repo https://github.com/owner/repo
 ```
 
 The tool will generate user stories with acceptance criteria based on the provided documents, work with your feedback through a workflow, and output well specified stories to the console.

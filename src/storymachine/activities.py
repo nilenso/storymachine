@@ -133,11 +133,18 @@ async def get_codebase_context(workflow_input: WorkflowInput) -> str:
 
     logger.info("codebase_questions_generated", questions_length=len(questions))
 
-    # Step 2: Use ask-github to query the GitHub repository
+    # Step 2: Determine which token to use based on repo URL
+    token = None
+    if "gitlab" in workflow_input.repo_url.lower():
+        token = settings.gitlab_token
+    else:
+        token = settings.github_token
+
+    # Step 3: Use ask-github to query the repository
     codebase_context = ask(
         repo_url=workflow_input.repo_url,
-        prompt="answer the following questions using parallel tool calls, and don't read the entire codebase, only find files we're interested in, and read them to get what we want: \n" + questions,
-        github_token=settings.github_token,
+        prompt=questions,
+        token=token,
         max_iterations=100,
     )
 

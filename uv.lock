@@ -172,7 +172,7 @@ wheels = [
 [[package]]
 name = "ask-github"
 version = "0.1.0"
-source = { git = "https://github.com/nilenso/ask-github.git#07b4d8ec86b7480774cf6c4777a6f3cc2dd462bb" }
+source = { git = "https://github.com/nilenso/ask-github.git#ce8a6b317d3e9ab7249e8cb6067fa0a3f466b9de" }
 dependencies = [
     { name = "litellm" },
     { name = "python-dotenv" },

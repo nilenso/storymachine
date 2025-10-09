@@ -31,25 +31,34 @@ cd storymachine
 uv sync
 ```
 
-3. Set up your OpenAI API key in a `.env` file:
+3. Set up your API keys in a `.env` file:
 ```bash
 echo "OPENAI_API_KEY=your-api-key-here" > .env
+# For GitHub repositories:
+echo "GITHUB_TOKEN=ghp_your_token_here" >> .env
+# For GitLab repositories:
+echo "GITLAB_TOKEN=glpat_your_token_here" >> .env
 ```
+
+   **Token Requirements:**
+   - **GitHub**: Create a Personal Access Token with `repo` scope (Settings → Developer settings → Personal access tokens)
+   - **GitLab**: Create a Personal Access Token with `read_api` and `read_repository` scopes (User Settings → Access Tokens)
 
 ## Usage
 
-Run StoryMachine with your PRD and technical specification files:
+Run StoryMachine with your PRD, technical specification, and repository URL:
 
+**For GitHub repositories:**
 ```bash
-uv run storymachine --prd path/to/your/prd.md --tech-spec path/to/your/tech-spec.md
+uv run storymachine --prd path/to/your/prd.md --tech-spec path/to/your/tech-spec.md --repo https://github.com/owner/repo
 ```
 
-Example using your own files:
+**For GitLab repositories:**
 ```bash
-uv run storymachine --prd path/to/your/prd.md --tech-spec path/to/your/tech-spec.md
+uv run storymachine --prd path/to/your/prd.md --tech-spec path/to/your/tech-spec.md --repo https://gitlab.com/owner/repo
 ```
 
-The tool will generate user stories with acceptance criteria based on the provided documents and output them to the console.
+The tool will generate user stories with acceptance criteria based on the provided documents, work with your feedback through a workflow, and output well specified stories to the console.
 
 ## Development
 

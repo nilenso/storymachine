@@ -113,7 +113,7 @@ def parse_text_from_response(response) -> str:
 
 async def get_codebase_context(workflow_input: WorkflowInput) -> str:
     """Get codebase context questions based on PRD and tech spec."""
-    from ask_github import ask
+    from ask_github import ask, list_tree
 
     from .config import Settings
 
@@ -121,11 +121,27 @@ async def get_codebase_context(workflow_input: WorkflowInput) -> str:
     settings = Settings()  # pyright: ignore[reportCallIssue]
     logger.info("codebase_context_started")
 
-    # Step 1: Generate questions based on PRD and tech spec
+    # Step 1: Determine which token to use based on repo URL
+    token = None
+    if "gitlab" in workflow_input.repo_url.lower():
+        token = settings.gitlab_token
+    else:
+        token = settings.github_token
+
+    # Step 2: Get repository tree structure (only files/blobs)
+    tree = list_tree(workflow_input.repo_url, token=token)
+    file_paths = [item["path"] for item in tree if item.get("type") == "blob"]
+    repo_structure = "\n".join(file_paths)
+    logger.info(
+        "repo_tree_retrieved", total_items=len(tree), file_count=len(file_paths)
+    )
+
+    # Step 3: Generate questions based on PRD, tech spec, and repo structure
     prompt = get_prompt(
         "repo_questions.md",
         prd_content=workflow_input.prd_content,
         tech_spec_content=workflow_input.tech_spec_content,
+        repo_structure=repo_structure,
     )
 
     response = call_openai_api(prompt)
@@ -133,14 +149,7 @@ async def get_codebase_context(workflow_input: WorkflowInput) -> str:
 
     logger.info("codebase_questions_generated", questions_length=len(questions))
 
-    # Step 2: Determine which token to use based on repo URL
-    token = None
-    if "gitlab" in workflow_input.repo_url.lower():
-        token = settings.gitlab_token
-    else:
-        token = settings.github_token
-
-    # Step 3: Use ask-github to query the repository
+    # Step 4: Use ask-github to query the repository
     codebase_context = ask(
         repo_url=workflow_input.repo_url,
         prompt=questions,

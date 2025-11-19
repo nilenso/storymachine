@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     openai_api_key: str = Field(..., frozen=True, alias="OPENAI_API_KEY")
     github_token: str | None = Field(None, frozen=True, alias="GITHUB_TOKEN")
     gitlab_token: str | None = Field(None, frozen=True, alias="GITLAB_TOKEN")
-    model: str = Field("gpt-5", alias="MODEL")
+    model: str = Field("gpt-5.1", alias="MODEL")
     reasoning_effort: str = Field("low", alias="REASONING_EFFORT")
 
     class Config:

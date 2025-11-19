@@ -139,7 +139,7 @@ class TestSettings:
             os.chdir(tmp_path)
             settings = Settings()  # pyright: ignore[reportCallIssue]
 
-            assert settings.model == "gpt-5"
+            assert settings.model == "gpt-5.1"
         finally:
             os.chdir(original_cwd)
 
